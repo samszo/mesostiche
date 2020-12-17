@@ -3,8 +3,13 @@ class mesostiche {
         var me = this;
         this.idCont = params.idCont;
         this.cont = d3.select("#"+params.idCont);
-        this.regle = params.regle ? params.regle : "Lucky Semiosis";
-        this.textes = params.textes ? params.textes : ["Lucky Semiosis","joue aux dès","avec des chances"];
+        this.anime = params.anime ? params.anime : false;
+        this.regle = params.regle ? params.regle : "ARCANES";
+        this.textes = params.textes ? params.textes : [
+            ["arts", "recherche", "communications", "artifices", "numériques", "espaces", "sociaux"]
+            ,["magies", "artifices", "beautés chaotiques", "espoir magnifiques", "envies", "alchimie scientifique", "médiations sociales"]
+        ];
+        this.fontFileName = params.fontFileName ? params.fontFileName : 'asset/fonts/FiraSansMedium.woff';        
         this.fontFamily = params.fontFamily ? params.fontFamily : "sans-serif";
         this.regleColor = params.regleColor ? params.regleColor : "red";
         this.txtColor = params.txtColor ? params.txtColor : "black";
@@ -15,8 +20,10 @@ class mesostiche {
         this.fctEnd = params.fctEnd ? params.fctEnd : false;
         this.fctPause = params.fctPause ? params.fctPause : false;
         this.fctChange = params.fctChange ? params.fctChange : false;
-        var svg, global, color, bar, bbox, animation, tl, rangeTime, fontSize=20
-            ,btnPause, btnPlay, btnReload, bPause = false, chars, regle, txtG, txtD, arrG=[], arrD=[]
+        this.f;
+        var svg, global, color, bar, bbox, animations, tl, rangeTime, fontSize=20
+            ,btnPause, btnPlay, btnReload, bPause = false, chars
+            , regle, arrG=[], arrD=[], txtG, txtD, pathG, pathD
             , margin=6;            
 
         this.init = function () {
@@ -27,15 +34,17 @@ class mesostiche {
         
             svg = this.cont.append("svg")
                 .attr("id", me.idCont+'svgMstch')
-                .attr("width",me.width).attr("height", me.height)
+                .attr("width",me.width+'px').attr("height", me.height+'px')
                 .style("margin",margin+"px");            
             bbox = me.cont.node().getBoundingClientRect();
             global = svg.append("g").attr("id",me.idCont+'svgMstchGlobal');
 
             //construction de la règle
             chars = me.regle.split('');
-            regle = global.selectAll('.regle').data(chars).enter().append("text")
-                .attr("id", me.idCont+'svgMstchRegle')
+            regle = global.append('g')
+                .attr("id",me.idCont+'svgMstchRegle');
+            regle.selectAll('.regle').data(chars).enter().append("text")
+                .attr("id", (d,i) => me.idCont+'svgMstchRegle'+i)
                 .attr("class", 'regle')
                 .attr("x",me.width/2)
                 .attr("y",(d,i)=>(fontSize*(i+1))+margin)
@@ -47,116 +56,125 @@ class mesostiche {
 
             //construction des textes à gauche et droite
             let y=0            
-            chars.forEach((t,i)=>{
-                y=i;
-                if(i>=me.textes.length)y=(i % me.textes.length);
-                let f = getIndicesOf(t,me.textes[y],false);
-                //prend en compte le caractère le plus au centre
-                if(f.length){
-                    let idx = Math.trunc(f.length/2);
-                    arrG.push(me.textes[y].substring(0,f[idx]));
-                    arrD.push(me.textes[y].substring(f[idx]+1));
-                }else{
-                    arrG.push("");
-                    arrD.push("");
-                    arrD[i-1]+=" "+me.textes[y];
-                }
-            })
-            //ajoute les textes à gauche
-            txtG = global.selectAll('.txtG').data(arrG).enter().append("text")
-                .attr("id", me.idCont+'svgMstchTxtG')
-                .attr("class", 'txtG')
-                .attr("x",(me.width/2)-margin)
-                .attr("y",(d,i)=>(fontSize*(i+1))+margin)
-                .attr("text-anchor", "end")
-                .attr("font-family", me.fontFamily)
-                .attr("font-size", (fontSize*0.8)+"px")
-                .attr("fill", me.txtColor)
-                .text(d=>d);
-            //ajoute les textes à droite
-            txtD = global.selectAll('.txtD').data(arrD).enter().append("text")
-                .attr("id", me.idCont+'svgMstchTxtD')
-                .attr("class", 'txtD')
-                .attr("x",(me.width/2)+margin)
-                .attr("y",(d,i)=>(fontSize*(i+1))+margin)
-                .attr("text-anchor", "start")
-                .attr("font-family", me.fontFamily)
-                .attr("font-size", (fontSize*0.8)+"px")
-                .attr("fill", me.txtColor)
-                .text(d=>d);
-
-
-            /*construction de l'animation    
-            tl = anime.timeline({
-                duration: me.duree*1000,
-                easing: 'easeInOutSine',
-                update: function(anim) {
-                    let progress = Math.round(tl.progress);
-                    txt.text(Math.round(me.duree-rangeTime(progress)) + ' s');
-                    bar.attr('fill',color(progress))
-                },
-                begin: function(anim) {
-                    txt.text(me.duree+' s');
-                    //txt.attr('x','0');
-                    //bar.attr('x','0');
-                },
-                complete: function(anim) {
-                    if(me.fctEnd)me.fctEnd();
-                }
-            });
-            tl.add({
-                targets: ['#'+me.idCont+'svgPBglobal'],
-                translateX: bbox.width,
+            me.textes.forEach((txts,j)=>{
+                arrG[j]=[];
+                arrD[j]=[];
+                chars.forEach((t,i)=>{
+                    y=i;                    
+                    if(i>=txts.length)y=(i % txts.length);
+                    let f = getIndicesOf(t,txts[y],false);
+                    //prend en compte le caractère le plus au centre
+                    if(f.length){
+                        let idx = Math.trunc(f.length/2);
+                        arrG[j].push(txts[y].substring(0,f[idx]));
+                        arrD[j].push(txts[y].substring(f[idx]+1));
+                    }else{
+                        arrG[j].push("");
+                        arrD[j].push("");
+                        arrD[j][i-1]+=" "+txts[y];
+                    }    
                 })
+            })
 
-            //construction des boutons
-            if(me.boutons){
-                let btns = global.append("g")
-                    .attr("id", me.idCont+'svgPBbtns');
-                btnPause = btns.append("g")
-                    .style('cursor','pointer')                
-                    .on('click',function(){me.pause()});                
-                btnPause.append("rect")
-                    .attr("id", me.idCont+'svgPBrect')
-                    .attr("x", 3)
-                    .attr("y", 2)
-                    .attr("rx", 1)
-                    .attr("ry", 1)
-                    .attr("height", 16)
-                    .attr("width", 6)
-                    .attr("fill", 'black');            
-                btnPause.append("rect")
-                    .attr("id", me.idCont+'svgPBrect')
-                    .attr("x", 11)
-                    .attr("y", 2)
-                    .attr("rx", 1)
-                    .attr("ry", 1)
-                    .attr("height", 16)
-                    .attr("width", 6)
-                    .attr("fill", 'black');
-                btnPlay = btns.append('path')
-                    .attr('fill-rule',"evenodd")
-                    .style('cursor','pointer')                
-                    .attr('d',"M16.75 10.83L4.55 19A1 1 0 0 1 3 18.13V1.87A1 1 0 0 1 4.55 1l12.2 8.13a1 1 0 0 1 0 1.7z")
-                    .on('click',function(){bPause=false;me.start()});                
-                btnReload = btns.append("g")
-                    .style('cursor','pointer')                
-                    .attr('transform','translate('+(me.width-20)+')')                
-                    .on('click',function(){me.pause()});  
-                //ajoute un rectangle pour faciliter le click              
-                btnReload.append("rect")
-                    .attr("height", 20)
-                    .attr("width", 20)
-                    .attr("fill-opacity", 0);
-                btnReload.append('path')
-                    .style('cursor','pointer')
-                    .attr('d',"M15.65 4.35A8 8 0 1 0 17.4 13h-2.22a6 6 0 1 1-1-7.22L11 9h7V2z")
-                    .on('click',function(){if(me.fctEnd)me.fctEnd();});                
-            }          
-                            */
+            let bb;
+            if(me.anime){
+                chars.forEach((c,i)=>{
+                     bb = d3.select('#'+me.idCont+'svgMstchRegle'+i).node().getBBox();
+                     alterneTexte(arrG,0,i,bb.x,bb.y+bb.height-parseInt(fontSize*0.8),'gauche');
+                     alterneTexte(arrD,0,i,bb.x+bb.width,bb.y+bb.height-parseInt(fontSize*0.8),'droite');
+                })
+            }else{
+                //ajoute les textes à gauche
+                let idDim = 1;
+                txtG = global.selectAll('.txtG').data(arrG[idDim]).enter().append("text")
+                    .attr("id", me.idCont+'svgMstchTxtG')
+                    .attr("class", 'txtG')
+                    .attr("x",(me.width/2)-margin)
+                    .attr("y",(d,i)=>(fontSize*(i+1))+margin)
+                    .attr("text-anchor", "end")
+                    .attr("font-family", me.fontFamily)
+                    .attr("font-size", parseInt(fontSize*0.8)+"px")
+                    .attr("fill", me.txtColor)
+                    .text(d=>d);
+                //ajoute les textes à droite
+                txtD = global.selectAll('.txtD').data(arrD[idDim]).enter().append("text")
+                    .attr("id", me.idCont+'svgMstchTxtD')
+                    .attr("class", 'txtD')
+                    .attr("x",(me.width/2)+margin)
+                    .attr("y",(d,i)=>(fontSize*(i+1))+margin)
+                    .attr("text-anchor", "start")
+                    .attr("font-family", me.fontFamily)
+                    .attr("font-size", parseInt(fontSize*0.8)+"px")
+                    .attr("fill", me.txtColor)
+                    .text(d=>d);
+            }
 
+            //redimensionne le svg
+            bb = global.node().getBBox();
+            svg.attr('viewBox',bb.x+' '+bb.y+' '+' '+bb.width+' '+bb.height);
               
         }
+
+
+        function alterneTexte(arrTxt, dim, num, x, y, col){
+            global.select('#gTxtPath'+col+dim+num).remove();
+            let txt = arrTxt[dim][num];
+            //if(txt)
+            getSvgTxtPath(txt, x, y, col, dim, num);
+    
+            let animation = anime.timeline({
+                targets: '#gTxtPath'+col+dim+num+' .line-drawing',
+                delay: function(el, i) { return i * 250 },
+                duration: 6000,
+                easing: 'easeInOutSine',
+                }).add({
+                    strokeDashoffset: [anime.setDashoffset, 0],
+                }).add({
+                    strokeDashoffset: [0, anime.setDashoffset],
+            });
+    
+            animation.finished.then(function(){
+                if(num>=arrTxt[dim].length-1){
+                    if(dim>=arrTxt.length-1) dim=0; else dim++;
+                    num=0; 
+                } else num++;
+                alterneTexte(arrTxt, dim, num, x, y, col);
+            });    
+        }
+    
+        function getSvgTxtPath(txt, x, y, col, dim, num){
+    
+            let glyphs = me.f.stringToGlyphs(txt);
+            let gCaracts = global.append('g').attr('id','gTxtPath'+col+dim+num);
+            let xG = 0, bb, moveX, moveY;
+            glyphs.forEach(g => {
+                let fp = g.getPath(0,0,parseInt(fontSize*0.8));
+                let d = fp.toPathData();
+                let p = gCaracts.append('path')
+                .attr('class','line-drawing')
+                .attr('fill',"none")
+                .attr('fill-rule',"evenodd")
+                .attr('stroke',"black")
+                .attr('stroke-width',"1")
+                .attr('transform','translate('+(xG)+','+(0)+')')
+                .attr('d',d);
+                //bb = g.getBoundingBox();
+                //bb = fp.getBoundingBox();
+                bb = p.node().getBBox();
+                xG+=bb.width+3;            
+            });
+            bb = gCaracts.node().getBBox();
+            moveY = -bb.y+y;
+            if(col=='gauche'){
+                moveX = -bb.x-bb.width+x;
+            }
+            if(col=='droite'){
+                moveX = -bb.x+x;
+            }
+            gCaracts.attr('transform','translate('+moveX+','+moveY+')')
+    
+        }
+
         //merci à https://stackoverflow.com/questions/3410464/how-to-find-indices-of-all-occurrences-of-one-string-in-another-in-javascript/3410557#3410557
         function getIndicesOf(searchStr, str, caseSensitive) {
             var searchStrLen = searchStr.length;
@@ -207,7 +225,17 @@ class mesostiche {
           svg.attr('visibility',"visible");
         }
 
-        me.init();
+        if(me.anime){
+            //charge la police 
+            opentype.load(me.fontFileName, function(err, font) {
+                if (err) {
+                    console.error(err.toString());
+                    return;
+                }
+                me.f = font
+                me.init();
+            });        
+        }else me.init();
 
     }
 }

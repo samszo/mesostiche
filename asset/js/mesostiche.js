@@ -15,15 +15,15 @@ class mesostiche {
         this.txtColor = params.txtColor ? params.txtColor : "black";
         this.width = params.width ? params.width : 300;
         this.height = params.height ? params.height : 300;
-        this.duree = params.duree ? params.duree : 10;//en seconde
+        this.duree = params.duree ? params.duree : 1;//en seconde
         this.boutons = params.boutons ? params.boutons : true;
         this.fctEnd = params.fctEnd ? params.fctEnd : false;
         this.fctPause = params.fctPause ? params.fctPause : false;
         this.fctChange = params.fctChange ? params.fctChange : false;
         this.f;
-        var svg, global, color, bar, bbox, animations, tl, rangeTime, fontSize=20
-            ,btnPause, btnPlay, btnReload, bPause = false, chars
-            , regle, arrG=[], arrD=[], txtG, txtD, pathG, pathD
+        var svg, global, color, bbox, tl, rangeTime, rapportFont=0.8, fontSize=20, fontSizeRedim=fontSize*rapportFont
+            , btnPause, btnPlay, btnReload, bPause = false, chars
+            , regle, arrTextes=[], curdim
             , margin=6;            
 
         this.init = function () {
@@ -57,8 +57,7 @@ class mesostiche {
             //construction des textes à gauche et droite
             let y=0            
             me.textes.forEach((txts,j)=>{
-                arrG[j]=[];
-                arrD[j]=[];
+                arrTextes[j]=[];
                 chars.forEach((t,i)=>{
                     y=i;                    
                     if(i>=txts.length)y=(i % txts.length);
@@ -66,47 +65,44 @@ class mesostiche {
                     //prend en compte le caractère le plus au centre
                     if(f.length){
                         let idx = Math.trunc(f.length/2);
-                        arrG[j].push(txts[y].substring(0,f[idx]));
-                        arrD[j].push(txts[y].substring(f[idx]+1));
+                        arrTextes[j].push({'text':txts[y].substring(0,f[idx]),'ordre':i,'type':'gauche'});
+                        arrTextes[j].push({'text':txts[y].substring(f[idx]+1),'ordre':i,'type':'droite'});
                     }else{
-                        arrG[j].push("");
-                        arrD[j].push("");
-                        arrD[j][i-1]+=" "+txts[y];
+                        arrTextes[j][i-1]['txt']+=" "+txts[y];
+                        arrTextes[j].push({'text':"",'ordre':i,'type':'gauche'});
+                        arrTextes[j].push({'text':"",'ordre':i,'type':'droite'});
                     }    
                 })
             })
 
             let bb;
             if(me.anime){
-                chars.forEach((c,i)=>{
-                     bb = d3.select('#'+me.idCont+'svgMstchRegle'+i).node().getBBox();
-                     alterneTexte(arrG,0,i,bb.x,bb.y+bb.height-parseInt(fontSize*0.8),'gauche');
-                     alterneTexte(arrD,0,i,bb.x+bb.width,bb.y+bb.height-parseInt(fontSize*0.8),'droite');
+                //construction des paths et des positions
+                arrTextes.forEach(txts=>{
+                    txts.forEach((txt)=>{
+                        bb = d3.select('#'+me.idCont+'svgMstchRegle'+txt.ordre).node().getBBox();
+                        txt.paths = getTxtPath(txt.text);
+                        txt.rbb = bb;
+                    })
                 })
+                //ajoute les path de la première dimension
+                curdim = 0;
+                drawSvgTxtPath();
+                //lancement des animations
+                alterneTexte();
             }else{
                 //ajoute les textes à gauche
                 let idDim = 1;
-                txtG = global.selectAll('.txtG').data(arrG[idDim]).enter().append("text")
-                    .attr("id", me.idCont+'svgMstchTxtG')
-                    .attr("class", 'txtG')
-                    .attr("x",(me.width/2)-margin)
-                    .attr("y",(d,i)=>(fontSize*(i+1))+margin)
-                    .attr("text-anchor", "end")
+                svgText = global.selectAll('.svgMstchTxt').data(arrTextes[idDim]).enter().append("text")
+                    .attr("id",(d,i)=>me.idCont+'svgMstchTxt'+i)
+                    .attr("class", 'MstchTxt')
+                    .attr("x",d=> d.type=='gauche' ? (me.width/2)-margin : (me.width/2)+margin)
+                    .attr("y",d=> (fontSize*(d.ordre+1))+margin)
+                    .attr("text-anchor", d=>d.type=='gauche' ? "end" : "start")
                     .attr("font-family", me.fontFamily)
-                    .attr("font-size", parseInt(fontSize*0.8)+"px")
+                    .attr("font-size", fontSizeRedim+"px")
                     .attr("fill", me.txtColor)
-                    .text(d=>d);
-                //ajoute les textes à droite
-                txtD = global.selectAll('.txtD').data(arrD[idDim]).enter().append("text")
-                    .attr("id", me.idCont+'svgMstchTxtD')
-                    .attr("class", 'txtD')
-                    .attr("x",(me.width/2)+margin)
-                    .attr("y",(d,i)=>(fontSize*(i+1))+margin)
-                    .attr("text-anchor", "start")
-                    .attr("font-family", me.fontFamily)
-                    .attr("font-size", parseInt(fontSize*0.8)+"px")
-                    .attr("fill", me.txtColor)
-                    .text(d=>d);
+                    .text(d=>d.text);                
             }
 
             //redimensionne le svg
@@ -115,17 +111,53 @@ class mesostiche {
               
         }
 
+        function drawSvgTxtPath(){
 
-        function alterneTexte(arrTxt, dim, num, x, y, col){
-            global.select('#gTxtPath'+col+dim+num).remove();
-            let txt = arrTxt[dim][num];
-            //if(txt)
-            getSvgTxtPath(txt, x, y, col, dim, num);
+            global.select('#gTextes').remove();
+            let gTextes = global.append('g').attr('id','gTextes');
+            let gTxt = gTextes.selectAll('g').data(arrTextes[curdim]).enter().append('g')
+                .attr('id',(d,i)=>'gTxt'+i);
+            let gCaracts = gTxt.selectAll('path').data(d=>d.paths).enter().append('path')
+                .attr('class','line-drawing')
+                .attr('fill',"none")
+                .attr('fill-rule',"evenodd")
+                .attr('stroke',"black")
+                .attr('stroke-width',"1")
+                .attr('d',d=>d.d)
+                .attr('transform',d=>{
+                    let t = 'translate('+(d.gX)+','+(0)+')';
+                    return t;
+                });
+            //positionne les textes
+            gTxt.attr('transform',(d,i)=>{
+                let bb = d3.select('#gTxt'+i).node().getBBox()
+                , moveY = d.rbb.y+(d.rbb.height*rapportFont)//sur la ligne de la lettre règle
+                , moveX = d.type=='gauche' ? -bb.x-bb.width+d.rbb.x : -bb.x+d.rbb.x+d.rbb.width
+                , t = 'translate('+moveX+','+moveY+')';
+               return t;
+            })
+        }
+    
+        function getTxtPath(txt){
+    
+            let glyphs = me.f.stringToGlyphs(txt)
+                , paths = []
+                , gX=0;
+            glyphs.forEach(g => {
+                let fp = g.getPath(0,0,fontSizeRedim)
+                , bb = fp.getBoundingBox();
+                paths.push({'d':fp.toPathData(), 'gX':gX ,'bb':fp.getBoundingBox()});
+                gX+=bb.x1+bb.x2;          
+            });
+            return paths;
+        }
+
+        function alterneTexte(){
     
             let animation = anime.timeline({
-                targets: '#gTxtPath'+col+dim+num+' .line-drawing',
+                targets: '.line-drawing',
                 delay: function(el, i) { return i * 250 },
-                duration: 6000,
+                duration: me.duree*1000/arrTextes.length,//durée par texte
                 easing: 'easeInOutSine',
                 }).add({
                     strokeDashoffset: [anime.setDashoffset, 0],
@@ -134,45 +166,10 @@ class mesostiche {
             });
     
             animation.finished.then(function(){
-                if(num>=arrTxt[dim].length-1){
-                    if(dim>=arrTxt.length-1) dim=0; else dim++;
-                    num=0; 
-                } else num++;
-                alterneTexte(arrTxt, dim, num, x, y, col);
+                curdim = curdim<arrTextes.length-1 ? curdim+1 : 0;
+                drawSvgTxtPath(curdim);
+                alterneTexte();
             });    
-        }
-    
-        function getSvgTxtPath(txt, x, y, col, dim, num){
-    
-            let glyphs = me.f.stringToGlyphs(txt);
-            let gCaracts = global.append('g').attr('id','gTxtPath'+col+dim+num);
-            let xG = 0, bb, moveX, moveY;
-            glyphs.forEach(g => {
-                let fp = g.getPath(0,0,parseInt(fontSize*0.8));
-                let d = fp.toPathData();
-                let p = gCaracts.append('path')
-                .attr('class','line-drawing')
-                .attr('fill',"none")
-                .attr('fill-rule',"evenodd")
-                .attr('stroke',"black")
-                .attr('stroke-width',"1")
-                .attr('transform','translate('+(xG)+','+(0)+')')
-                .attr('d',d);
-                //bb = g.getBoundingBox();
-                //bb = fp.getBoundingBox();
-                bb = p.node().getBBox();
-                xG+=bb.width+3;            
-            });
-            bb = gCaracts.node().getBBox();
-            moveY = -bb.y+y;
-            if(col=='gauche'){
-                moveX = -bb.x-bb.width+x;
-            }
-            if(col=='droite'){
-                moveX = -bb.x+x;
-            }
-            gCaracts.attr('transform','translate('+moveX+','+moveY+')')
-    
         }
 
         //merci à https://stackoverflow.com/questions/3410464/how-to-find-indices-of-all-occurrences-of-one-string-in-another-in-javascript/3410557#3410557

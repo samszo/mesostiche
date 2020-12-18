@@ -6,8 +6,9 @@ class mesostiche {
         this.anime = params.anime ? params.anime : false;
         this.regle = params.regle ? params.regle : "ARCANES";
         this.textes = params.textes ? params.textes : [
-            ["arts", "recherche", "communications", "artifices", "numériques", "espaces", "sociaux"]
-            ,["magies", "artifices", "beautés chaotiques", "espoir magnifiques", "envies", "alchimie scientifique", "médiations sociales"]
+            ["a la mer", "il y a des pêcheurs", "qui chassent du bon poisson", "et des coquillages magnifiques", "bons pour la santé", "et sublimes pour le goût", "vive les pêcheurs"]
+            //,["arts", "recherche", "communications", "artifices", "numériques", "espaces", "sociaux"]
+            //,["magies", "artifices", "beautés chaotiques", "espoir magnifiques", "envies", "alchimie scientifique", "médiations sociales"]
         ];
         this.fontFileName = params.fontFileName ? params.fontFileName : 'asset/fonts/FiraSansMedium.woff';        
         this.fontFamily = params.fontFamily ? params.fontFamily : "sans-serif";
@@ -146,8 +147,13 @@ class mesostiche {
             glyphs.forEach(g => {
                 let fp = g.getPath(0,0,fontSizeRedim)
                 , bb = fp.getBoundingBox();
-                paths.push({'d':fp.toPathData(), 'gX':gX ,'bb':fp.getBoundingBox()});
-                gX+=bb.x1+bb.x2;          
+                if(g.name=="space"){
+                    paths.push({'d':"M 0,0 H "+me.margin, 'gX':gX ,'bb':bb});
+                    gX+=margin;          
+                }else{
+                    paths.push({'d':fp.toPathData(), 'gX':gX ,'bb':bb});
+                    gX+=bb.x1+bb.x2;          
+                }
             });
             return paths;
         }

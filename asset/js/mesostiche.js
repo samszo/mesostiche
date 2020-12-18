@@ -6,9 +6,8 @@ class mesostiche {
         this.anime = params.anime ? params.anime : false;
         this.regle = params.regle ? params.regle : "ARCANES";
         this.textes = params.textes ? params.textes : [
-            ["a la mer", "il y a des pêcheurs", "qui chassent du bon poisson", "et des coquillages magnifiques", "bons pour la santé", "et sublimes pour le goût", "vive les pêcheurs"]
-            //,["arts", "recherche", "communications", "artifices", "numériques", "espaces", "sociaux"]
-            //,["magies", "artifices", "beautés chaotiques", "espoir magnifiques", "envies", "alchimie scientifique", "médiations sociales"]
+            ["arts", "recherche", "communications", "artifices", "numériques", "espaces", "sociaux"]
+            ,["magies", "artifices", "beautés chaotiques", "espoir magnifiques", "envies", "alchimie scientifique", "médiations sociales"]
         ];
         this.fontFileName = params.fontFileName ? params.fontFileName : 'asset/fonts/FiraSansMedium.woff';        
         this.fontFamily = params.fontFamily ? params.fontFamily : "sans-serif";
@@ -22,17 +21,19 @@ class mesostiche {
         this.fctPause = params.fctPause ? params.fctPause : false;
         this.fctChange = params.fctChange ? params.fctChange : false;
         this.f;
-        var svg, global, color, bbox, tl, rangeTime, rapportFont=0.8, fontSize=20, fontSizeRedim=fontSize*rapportFont
+        var svg, global
+            , color = d3.scaleSequential().domain([1,100])
+                .interpolator(d3.interpolateTurbo)//d3.interpolateWarm
+            , aleaColor = d3.randomUniform(0, 100)
+            , bbox, tl
+            , rangeTime =d3.scaleLinear().domain([0,100]).range([0,me.duree])
+            , rapportFont=0.8, fontSize=20, fontSizeRedim=fontSize*rapportFont
             , btnPause, btnPlay, btnReload, bPause = false, chars
             , regle, arrTextes=[], curdim
             , margin=6;            
 
         this.init = function () {
             
-            rangeTime = d3.scaleLinear().domain([0,100]).range([0,me.duree]);
-            color = d3.scaleSequential().domain([1,100])
-                .interpolator(d3.interpolateTurbo);//d3.interpolateWarm
-        
             svg = this.cont.append("svg")
                 .attr("id", me.idCont+'svgMstch')
                 .attr("width",me.width+'px').attr("height", me.height+'px')
@@ -52,7 +53,7 @@ class mesostiche {
                 .attr("text-anchor", "middle")
                 .attr("font-family", me.fontFamily)
                 .attr("font-size", fontSize+"px")
-                .attr("fill", me.regleColor)
+                .attr("fill",(d)=> me.regleColor == "alea" ? color(aleaColor()) : me.regleColor)
                 .text(d=>d);
 
             //construction des textes à gauche et droite
@@ -91,10 +92,12 @@ class mesostiche {
                 drawSvgTxtPath();
                 //lancement des animations
                 alterneTexte();
+                if(me.regleColor == "alea")changeColorRegle();
+                if(me.txtColor == "alea")changeColorTxt();
             }else{
                 //ajoute les textes à gauche
                 let idDim = 1;
-                svgText = global.selectAll('.svgMstchTxt').data(arrTextes[idDim]).enter().append("text")
+                global.selectAll('.svgMstchTxt').data(arrTextes[idDim]).enter().append("text")
                     .attr("id",(d,i)=>me.idCont+'svgMstchTxt'+i)
                     .attr("class", 'MstchTxt')
                     .attr("x",d=> d.type=='gauche' ? (me.width/2)-margin : (me.width/2)+margin)
@@ -102,13 +105,13 @@ class mesostiche {
                     .attr("text-anchor", d=>d.type=='gauche' ? "end" : "start")
                     .attr("font-family", me.fontFamily)
                     .attr("font-size", fontSizeRedim+"px")
-                    .attr("fill", me.txtColor)
+                    .attr("fill",(d)=> me.txtColor == "alea" ? color(aleaColor()) : me.txtColor)
                     .text(d=>d.text);                
+                //redimensionne le svg
+                bb = global.node().getBBox();
+                svg.attr('viewBox',(bb.x-margin)+' '+(bb.y-margin)+' '+' '+(bb.width+margin)+' '+(bb.height+margin));
             }
 
-            //redimensionne le svg
-            bb = global.node().getBBox();
-            svg.attr('viewBox',bb.x+' '+bb.y+' '+' '+bb.width+' '+bb.height);
               
         }
 
@@ -119,10 +122,14 @@ class mesostiche {
             let gTxt = gTextes.selectAll('g').data(arrTextes[curdim]).enter().append('g')
                 .attr('id',(d,i)=>'gTxt'+i);
             let gCaracts = gTxt.selectAll('path').data(d=>d.paths).enter().append('path')
-                .attr('class','line-drawing')
+                .attr('class',me.idCont+'line-drawing')
                 .attr('fill',"none")
                 .attr('fill-rule',"evenodd")
-                .attr('stroke',"black")
+                .attr("stroke",(d)=> {
+                    let c = me.txtColor == "alea" ? color(aleaColor()) : me.txtColor;
+                    if(d.space)c='none';
+                    return c;
+                })
                 .attr('stroke-width',"1")
                 .attr('d',d=>d.d)
                 .attr('transform',d=>{
@@ -137,6 +144,10 @@ class mesostiche {
                 , t = 'translate('+moveX+','+moveY+')';
                return t;
             })
+            //redimensionne le svg
+            let bb = global.node().getBBox();
+            svg.attr('viewBox',(bb.x-margin)+' '+(bb.y-margin)+' '+' '+(bb.width+margin)+' '+(bb.height+margin));
+
         }
     
         function getTxtPath(txt){
@@ -148,10 +159,10 @@ class mesostiche {
                 let fp = g.getPath(0,0,fontSizeRedim)
                 , bb = fp.getBoundingBox();
                 if(g.name=="space"){
-                    paths.push({'d':"M 0,0 H "+me.margin, 'gX':gX ,'bb':bb});
+                    paths.push({'space':true,'d':"M 0,0 H "+margin, 'gX':gX ,'bb':bb});
                     gX+=margin;          
                 }else{
-                    paths.push({'d':fp.toPathData(), 'gX':gX ,'bb':bb});
+                    paths.push({'space':false,'d':fp.toPathData(), 'gX':gX ,'bb':bb});
                     gX+=bb.x1+bb.x2;          
                 }
             });
@@ -161,7 +172,7 @@ class mesostiche {
         function alterneTexte(){
     
             let animation = anime.timeline({
-                targets: '.line-drawing',
+                targets: '.'+me.idCont+'line-drawing',
                 delay: function(el, i) { return i * 250 },
                 duration: me.duree*1000/arrTextes.length,//durée par texte
                 easing: 'easeInOutSine',
@@ -178,6 +189,43 @@ class mesostiche {
             });    
         }
 
+        function changeColorRegle(){
+    
+            let animation = anime({
+                targets: '#'+me.idCont+'svgMstchRegle .regle',
+                loop: true,
+                duration: me.duree*1000*arrTextes.length,//durée par texte,
+                easing: 'easeInOutSine',
+                fill: {
+                    value: function () {
+                        let c1 = color(aleaColor());
+                        let c2 = color(aleaColor());
+                        return [c1, c2];
+                    },
+                },
+                //opacity: [0, 1],
+                direction: 'alternate'
+            });
+        }
+
+        function changeColorTxt(){
+    
+            let animation = anime({
+                targets: '.'+me.idCont+'line-drawing',
+                loop: true,
+                duration: me.duree*1000,//durée par texte,
+                easing: 'easeInOutSine',
+                stroke: {
+                    value: function () {
+                        let c1 = color(aleaColor());
+                        let c2 = color(aleaColor());
+                        return [c1, c2];
+                    },
+                },
+                //opacity: [0, 1],
+                direction: 'alternate'
+            });
+        }        
         //merci à https://stackoverflow.com/questions/3410464/how-to-find-indices-of-all-occurrences-of-one-string-in-another-in-javascript/3410557#3410557
         function getIndicesOf(searchStr, str, caseSensitive) {
             var searchStrLen = searchStr.length;

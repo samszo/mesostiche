@@ -11,9 +11,32 @@
 </head>
 <body>
     <div id="logo"></div>    
+    <div id="logoDyna" style="background-color: black;"></div>    
+    <div id="logoCouleur"></div>    
 </body>
 <script>
-    let m = new mesostiche({'idCont':'logo','anime':true,'width':800,'height':600});
+    let m = new mesostiche({
+        'idCont':'logo'
+        ,'anime':false,'width':100,'height':100
+    });
+    let mDyna = new mesostiche({
+        'idCont':'logoDyna'
+        ,'anime':true,'width':300,'height':300
+        ,'regleColor':'white'
+        ,'txtColor':'white'
+    });
+    let mAleaColor = new mesostiche({
+        'idCont':'logoCouleur'
+        ,'anime':true,'width':300,'height':300
+        ,'regleColor':'alea'
+        ,'txtColor':'alea'
+        ,'regle':'IMAGINATION'
+        ,'textes':
+            ["les images immobiles", "recherche", "communications", "artifices", "numériques", "espaces", "sociaux"]
+            ,["magies", "artifices", "beautés chaotiques", "espoir magnifiques", "envies", "alchimie scientifique", "médiations sociales"]
+            ,["a la mer", "il y a des pêcheurs", "qui chassent du bon poisson", "et des coquillages magnifiques", "bons pour la santé", "et sublimes pour le goût", "vive les pêcheurs"
+        ]
+    });
 
 </script>
 </html>

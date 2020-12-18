@@ -4,10 +4,9 @@ class mesostiche {
         this.idCont = params.idCont;
         this.cont = d3.select("#"+params.idCont);
         this.anime = params.anime ? params.anime : false;
-        this.regle = params.regle ? params.regle : "ARCANES";
+        this.regle = params.regle ? params.regle : "MESOSTICHES";
         this.textes = params.textes ? params.textes : [
-            ["arts", "recherche", "communications", "artifices", "numériques", "espaces", "sociaux"]
-            ,["magies", "artifices", "beautés chaotiques", "espoir magnifiques", "envies", "alchimie scientifique", "médiations sociales"]
+            ["Il y a des mots", "à travers", "les lettres", "qui osent", "des significations", "souvent improbables", "mais","au combien","charmantes","et","pitoresques"]
         ];
         this.fontFileName = params.fontFileName ? params.fontFileName : 'asset/fonts/FiraSansMedium.woff';        
         this.fontFamily = params.fontFamily ? params.fontFamily : "sans-serif";
@@ -20,10 +19,11 @@ class mesostiche {
         this.fctEnd = params.fctEnd ? params.fctEnd : false;
         this.fctPause = params.fctPause ? params.fctPause : false;
         this.fctChange = params.fctChange ? params.fctChange : false;
+        this.interpolateColor = params.interpolateColor ? params.interpolateColor : d3.interpolateTurbo;
         this.f;
         var svg, global
             , color = d3.scaleSequential().domain([1,100])
-                .interpolator(d3.interpolateTurbo)//d3.interpolateWarm
+                .interpolator(me.interpolateColor)//d3.interpolateWarm
             , aleaColor = d3.randomUniform(0, 100)
             , bbox, tl
             , rangeTime =d3.scaleLinear().domain([0,100]).range([0,me.duree])
@@ -70,9 +70,13 @@ class mesostiche {
                         arrTextes[j].push({'text':txts[y].substring(0,f[idx]),'ordre':i,'type':'gauche'});
                         arrTextes[j].push({'text':txts[y].substring(f[idx]+1),'ordre':i,'type':'droite'});
                     }else{
-                        arrTextes[j][i-1]['txt']+=" "+txts[y];
+                        if(i>0){
+                            arrTextes[j][i-1]['txt']+=" "+txts[y];
+                            arrTextes[j].push({'text':"",'ordre':i,'type':'droite'});
+                        }else{
+                            arrTextes[j].push({'text':" "+txts[y],'ordre':i,'type':'droite'});
+                        }
                         arrTextes[j].push({'text':"",'ordre':i,'type':'gauche'});
-                        arrTextes[j].push({'text':"",'ordre':i,'type':'droite'});
                     }    
                 })
             })
@@ -95,24 +99,28 @@ class mesostiche {
                 if(me.regleColor == "alea")changeColorRegle();
                 if(me.txtColor == "alea")changeColorTxt();
             }else{
-                //ajoute les textes à gauche
-                let idDim = 1;
-                global.selectAll('.svgMstchTxt').data(arrTextes[idDim]).enter().append("text")
-                    .attr("id",(d,i)=>me.idCont+'svgMstchTxt'+i)
-                    .attr("class", 'MstchTxt')
-                    .attr("x",d=> d.type=='gauche' ? (me.width/2)-margin : (me.width/2)+margin)
-                    .attr("y",d=> (fontSize*(d.ordre+1))+margin)
-                    .attr("text-anchor", d=>d.type=='gauche' ? "end" : "start")
-                    .attr("font-family", me.fontFamily)
-                    .attr("font-size", fontSizeRedim+"px")
-                    .attr("fill",(d)=> me.txtColor == "alea" ? color(aleaColor()) : me.txtColor)
-                    .text(d=>d.text);                
-                //redimensionne le svg
-                bb = global.node().getBBox();
-                svg.attr('viewBox',(bb.x-margin)+' '+(bb.y-margin)+' '+' '+(bb.width+margin)+' '+(bb.height+margin));
+                curdim = 0;
+                drawTxtStatique(curdim)
             }
 
               
+        }
+
+        function drawTxtStatique(dim){
+            global.selectAll('.svgMstchTxt').data(arrTextes[dim]).enter().append("text")
+                .attr("id",(d,i)=>me.idCont+'svgMstchTxt'+i)
+                .attr("class", 'MstchTxt')
+                .attr("x",d=> d.type=='gauche' ? (me.width/2)-margin : (me.width/2)+margin)
+                .attr("y",d=> (fontSize*(d.ordre+1))+margin)
+                .attr("text-anchor", d=>d.type=='gauche' ? "end" : "start")
+                .attr("font-family", me.fontFamily)
+                .attr("font-size", fontSizeRedim+"px")
+                .attr("fill",(d)=> me.txtColor == "alea" ? color(aleaColor()) : me.txtColor)
+                .text(d=>d.text);                
+            //redimensionne le svg
+            let bb = global.node().getBBox();
+            svg.attr('viewBox',(bb.x-margin)+' '+(bb.y-margin)+' '+' '+(bb.width+margin)+' '+(bb.height+margin));
+
         }
 
         function drawSvgTxtPath(){
@@ -120,9 +128,9 @@ class mesostiche {
             global.select('#gTextes').remove();
             let gTextes = global.append('g').attr('id','gTextes');
             let gTxt = gTextes.selectAll('g').data(arrTextes[curdim]).enter().append('g')
-                .attr('id',(d,i)=>'gTxt'+i);
+                .attr('id',(d,i)=>me.idCont+'gTxt'+i);
             let gCaracts = gTxt.selectAll('path').data(d=>d.paths).enter().append('path')
-                .attr('class',me.idCont+'line-drawing')
+                .attr('class',d=> d.space ? me.idCont+'space' : me.idCont+'line-drawing')
                 .attr('fill',"none")
                 .attr('fill-rule',"evenodd")
                 .attr("stroke",(d)=> {
@@ -138,7 +146,7 @@ class mesostiche {
                 });
             //positionne les textes
             gTxt.attr('transform',(d,i)=>{
-                let bb = d3.select('#gTxt'+i).node().getBBox()
+                let bb = d3.select('#'+me.idCont+'gTxt'+i).node().getBBox()
                 , moveY = d.rbb.y+(d.rbb.height*rapportFont)//sur la ligne de la lettre règle
                 , moveX = d.type=='gauche' ? -bb.x-bb.width+d.rbb.x : -bb.x+d.rbb.x+d.rbb.width
                 , t = 'translate('+moveX+','+moveY+')';

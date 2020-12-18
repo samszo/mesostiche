@@ -12,7 +12,7 @@
 <body>
     <div id="logo"></div>    
     <div id="logoDyna" style="background-color: black;"></div>    
-    <div id="logoCouleur"></div>    
+    <div id="logoCouleur" style="background-color: black;"></div>    
 </body>
 <script>
     let m = new mesostiche({
@@ -24,19 +24,23 @@
         ,'anime':true,'width':300,'height':300
         ,'regleColor':'white'
         ,'txtColor':'white'
+        ,'regle': "ARCANES"
+        ,'textes': [
+            ["arts", "recherche", "communications", "artifices", "numériques", "espaces", "sociaux"]
+            ,["magies", "artifices", "beautés chaotiques", "espoir magnifiques", "envies", "alchimie scientifique", "médiations sociales"]
+        ]
     });
     let mAleaColor = new mesostiche({
         'idCont':'logoCouleur'
-        ,'anime':true,'width':300,'height':300
+        ,'anime':true,'width':800,'height':300
         ,'regleColor':'alea'
         ,'txtColor':'alea'
         ,'regle':'IMAGINATION'
-        ,'textes':
-            ["les images immobiles", "recherche", "communications", "artifices", "numériques", "espaces", "sociaux"]
-            ,["magies", "artifices", "beautés chaotiques", "espoir magnifiques", "envies", "alchimie scientifique", "médiations sociales"]
-            ,["a la mer", "il y a des pêcheurs", "qui chassent du bon poisson", "et des coquillages magnifiques", "bons pour la santé", "et sublimes pour le goût", "vive les pêcheurs"
+        ,'interpolateColor':d3.interpolateGnBu
+        ,'textes':[
+            ["En mer d'Italie", "il y a des marins pêcheurs", "qui chassent du bon poisson", "et des coquillages magnifiques", "bons pour l'imagination", "et sublimes pour un goût", "qui en mangeant", ", sans artifices", "nous innonde", "de bonheurs", "naturels"]
         ]
-    });
+        });
 
 </script>
 </html>

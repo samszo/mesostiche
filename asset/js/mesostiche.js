@@ -12,8 +12,8 @@ class mesostiche {
         this.fontFamily = params.fontFamily ? params.fontFamily : "sans-serif";
         this.regleColor = params.regleColor ? params.regleColor : "red";
         this.txtColor = params.txtColor ? params.txtColor : "black";
-        this.width = params.width ? params.width : 300;
-        this.height = params.height ? params.height : 300;
+        this.width = params.width ? params.width : this.cont.node().offsetWidth;
+        this.height = params.height ? params.height : this.cont.node().offsetHeight;
         this.duree = params.duree ? params.duree : 1;//en seconde
         this.boutons = params.boutons ? params.boutons : true;
         this.fctEnd = params.fctEnd ? params.fctEnd : false;
@@ -54,7 +54,7 @@ class mesostiche {
                 .attr("font-family", me.fontFamily)
                 .attr("font-size", fontSize+"px")
                 .attr("fill",(d)=> me.regleColor == "alea" ? color(aleaColor()) : me.regleColor)
-                .text(d=>d);
+                .text(d=>d==" " ? '\u00A0' : d);
 
             //construction des textes à gauche et droite
             let y=0            
@@ -63,7 +63,7 @@ class mesostiche {
                 chars.forEach((t,i)=>{
                     y=i;                    
                     if(i>=txts.length)y=(i % txts.length);
-                    let f = getIndicesOf(t,txts[y],false);
+                    let f = txts[y] ? getIndicesOf(t,txts[y],false) : "";
                     //prend en compte le caractère le plus au centre
                     if(f.length){
                         let idx = Math.trunc(f.length/2);

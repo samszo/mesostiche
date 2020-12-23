@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exemple mésotiche</title>
+    <script src="asset/js/anime.min.js"></script>
+    <script src="asset/js/d3.V6.min.js"></script>
+    <script src="asset/js/opentype.min.js"></script>
+    <script src="asset/js/mesostiche.js"></script>
+    <style>
+        body{
+            background-color:black;
+        }
+        #cantiques{
+            width: 100vh;
+            height: 100vh;        
+        }
+    </style>
+</head>
+<body>
+    <div id="cantiques"></div>    
+</body>
+<script>
+    let textes = [], regle = 'BONNE ANNEE';
+    //Pour les textes merci à :
+    //https://github.com/arnoldkouya/Chants-de-victoire-JSON    
+    d3.json('data/chants-victoire.json').then(function(data) {
+        //création des textes 
+        data.chants.forEach(c => {
+            let slt = [];
+            let caract = 0;
+            c.content.forEach(s=>{
+                //enlève les numéros, les bis et crée le tableau des strophes 
+                let arrS = s.substr(3).replace('(bis)','').split(/\r\n|\n|\r/);
+                //sélectionne les strophes de la règle
+                arrS.forEach(st=>{
+                    if(st!=""){
+                        if(st.toLowerCase().indexOf(regle.substr(caract,1).toLowerCase())>=0){
+                            slt.push(st);
+                            caract++;
+                        }else{
+                            let dechet = st;
+                        }
+                        if(caract>=regle.length){
+                            if(slt.length)textes.push(slt);
+                            caract=0;
+                            slt = [];
+                        }
+                    }
+                })
+            })
+            //pour avoir égalisé le nombre de texte par rapport à la règle
+            while(slt.length%regle.length!=0){
+                slt.push(" ");
+            }
+            if(slt.length)textes.push(slt);
+            caract=0;
+            slt = [];
+        });
+        //mélange les textes
+        let aleaTexte = [];
+        for (let i = 0; i < 9; i++) {
+            let aleaStrophe = [];
+            for (let j = 0; j < regle.length; j++) {
+                let idxText = d3.randomInt(0, textes.length-1)();
+                aleaStrophe.push(textes[idxText][j]);
+            }
+            aleaTexte.push(aleaStrophe)
+        }
+        //création du graphique
+        let m = new mesostiche({
+            'idCont':'cantiques'
+            ,'anime':true
+            ,'regleColor':'#c90e25'
+            ,'txtColor':'#57168f'
+            ,'regle':regle
+            //,'interpolateColor':d3.interpolatePuRd
+            ,'textes':aleaTexte
+        });
+
+    });    
+
+</script>
+</html>

@@ -3,68 +3,209 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Exemple mésotiche</title>
+    <title>Cantiques pour une nouvelle révolution</title>
     <script src="asset/js/anime.min.js"></script>
     <script src="asset/js/d3.V6.min.js"></script>
     <script src="asset/js/opentype.min.js"></script>
     <script src="asset/js/mesostiche.js"></script>
+    <script src="asset/js/exagramme.js"></script>
+    <script src="asset/js/canvg.js"></script>
+    <script src="asset/js/svgenie.js"></script>
+
     <style>
         body{
             background-color:black;
         }
         #cantiques{
-            width: 100vh;
+            width: 100vw;
             height: 100vh;        
+        }
+        #menu{
+            position: absolute;
+            top:6px;
+            right: 6px;
+            width: 60px;
+            height: 60px;        
         }
     </style>
 </head>
 <body>
-    <div id="cantiques"></div>    
+    <div id="menu"></div>
+    <div id="cantiques"></div>
 </body>
 <script>
-    let textes = [], regle = 'BONNE ANNEE';
-    //Pour les textes merci à :
-    //https://github.com/arnoldkouya/Chants-de-victoire-JSON    
-    d3.json('data/chants-victoire.json').then(function(data) {
-        //création des textes 
-        data.chants.forEach(c => {
+    let textes = [], regle = 'BONNE REVOLUTION';
+    let rdmEasingNames = d3.randomInt(0, 36), rdmX, rdmY, arrAnim=[]
+    , nbNuee=0, cumulPapi=true;
+
+    let menu = new exagramme({
+            'idCont':'menu'
+            ,'anime':true
+            //,'color':'alea'//'white'//'#c90e25'
+            ,'interpolateColor':d3.interpolatePuRd
+            ,'boutons':true
+            ,'fctClickExa':showMenu
+            ,'fctClickTrait':showTrait
+        });
+
+
+    //txtFromJson();
+    txtFromCsv();
+
+    function showMenu(){
+        console.log('showMenu');
+    }
+
+    function showTrait(e,d){
+        console.log('showTrait');
+        console.log(d);
+    }
+
+    function txtFromCsv(cb){
+
+        //Pour les textes merci à :
+        //https://cantiques.yapper.fr/CJ/index.html    
+        d3.csv('data/chants-joyeux.csv').then(function(data) {
+            //création des textes 
             let slt = [];
             let caract = 0;
-            c.content.forEach(s=>{
-                //enlève les numéros, les bis et crée le tableau des strophes 
-                let arrS = s.substr(3).replace('(bis)','').split(/\r\n|\n|\r/);
-                //sélectionne les strophes de la règle
-                arrS.forEach(st=>{
-                    if(st!=""){
-                        if(st.toLowerCase().indexOf(regle.substr(caract,1).toLowerCase())>=0){
-                            slt.push(st);
-                            caract++;
-                        }else{
-                            let dechet = st;
-                        }
-                        if(caract>=regle.length){
-                            if(slt.length)textes.push(slt);
-                            caract=0;
-                            slt = [];
-                        }
+            data.forEach(s=>{
+                let st = s.txt;
+                if(st!=""){
+                    st=cleanTexte(st);
+                    if(st.toLowerCase().indexOf(regle.substr(caract,1).toLowerCase())>0){
+                        slt.push(st);
+                        caract++;
+                    }else{
+                        let dechet = st;
                     }
-                })
-            })
+                    if(caract>=regle.length){
+                        if(slt.length)textes.push(slt);
+                        caract=0;
+                        slt = [];
+                    }
+                }
+            });
             //pour avoir égalisé le nombre de texte par rapport à la règle
             while(slt.length%regle.length!=0){
                 slt.push(" ");
             }
             if(slt.length)textes.push(slt);
-            caract=0;
-            slt = [];
+            creaMeso();
         });
+    }
+
+
+    function txtFromJson(){
+
+        //Pour les textes merci à :
+        //https://github.com/arnoldkouya/Chants-de-victoire-JSON    
+        d3.json('data/chants-victoire.json').then(function(data) {
+            //création des textes 
+            data.chants.forEach(c => {
+                let slt = [];
+                let caract = 0;
+                c.content.forEach(s=>{
+                    
+                    //enlève les numéros, les bis et crée le tableau des strophes 
+                    let arrS = s.substr(3).split(/\r\n|\n|\r/);
+                    //sélectionne les strophes de la règle
+                    arrS.forEach(st=>{
+                        if(st!=""){
+                            st=cleanTexte(st);
+                            if(st.toLowerCase().indexOf(regle.substr(caract,1).toLowerCase())>=0){
+                                slt.push(st);
+                                caract++;
+                            }else{
+                                let dechet = st;
+                            }
+                            if(caract>=regle.length){
+                                if(slt.length)textes.push(slt);
+                                caract=0;
+                                slt = [];
+                            }
+                        }
+                    })
+                })
+                //pour avoir égalisé le nombre de texte par rapport à la règle
+                while(slt.length%regle.length!=0){
+                    slt.push(" ");
+                }
+                if(slt.length)textes.push(slt);
+                caract=0;
+                slt = [];
+            });
+            txtFromCsv();
+        });   
+    }
+    
+
+    function cleanTexte(s){
+        //nettoie le texte
+        s = s.replace('(Bis)','');
+        s = s.replace('(bis)','');
+        s = s.replace('!(bis)','!');
+        s = s.replace('»(bis)','');
+        s = s.replace('.(bis)','.');
+        s = s.replace('(ter)','');
+        s = s.replace('{','');
+        s = s.replace('}','');
+        s = s.replace('«','');
+        s = s.replace('»','');
+        s = s.replace(', etc.','');
+
+        //déchristianise le cantique
+        s = s.replace("Jésus Christ","l'Amour");
+        s = s.replace('Jésus',"l'Amour");
+        s = s.replace("Christ","l'Amour");
+        s = s.replace('Ta croix','ton arbre');
+        s = s.replace('de la croix',"d'un arbre");
+        s = s.replace('Sauveur',"ami");
+        s = s.replace('Le Seigneur',"le bonheur");
+        s = s.replace('Seigneur',"bonheur");
+        s = s.replace('Croix',"vie");
+        s = s.replace('croix',"vie");
+        s = s.replace('de Satan',"du triste");
+        s = s.replace('Satan',"le triste");
+        s = s.replace("l'agneau","l'enfant");
+        s = s.replace("l'Agneau","l'enfant");
+        s = s.replace("Agneau","enfant");
+        s = s.replace("David","lui");
+        s = s.replace("mon Dieu","mon pouvoir");
+        s = s.replace("Mon Dieu","mon pouvoir");
+        s = s.replace("de Dieu","du pouvoir");
+        s = s.replace("Dieu","le pouvoir");
+        s = s.replace("Divin","joyeux");
+        s = s.replace("divin","joyeux");
+        s = s.replace("Maître","ami");
+        s = s.replace("l'Évangile","le chant");
+        s = s.replace("l'évangile","le chant");
+        s = s.replace("sacrifié","aimé");
+        s = s.replace("“","");
+        s = s.replace("”","");
+        s = s.replace("Golgotha","ville");
+        
+                
+        return s        
+    }
+
+    function creaMeso(){
+
         //mélange les textes
         let aleaTexte = [];
-        for (let i = 0; i < 9; i++) {
+        for (let i = 0; i < 99; i++) {
             let aleaStrophe = [];
             for (let j = 0; j < regle.length; j++) {
-                let idxText = d3.randomInt(0, textes.length-1)();
-                aleaStrophe.push(textes[idxText][j]);
+                //pour ne pas avoir de texte vide
+                let s = " ";
+                let z=0;//pour ne pas boucler infiniement
+                while(s==" "){
+                    let idxText = d3.randomInt(0, textes.length-1)();
+                    s = textes[idxText][j];
+                    z++;
+                    if(z>1000)s="";
+                }
+                aleaStrophe.push(s);
             }
             aleaTexte.push(aleaStrophe)
         }
@@ -72,14 +213,146 @@
         let m = new mesostiche({
             'idCont':'cantiques'
             ,'anime':true
-            ,'regleColor':'#c90e25'
-            ,'txtColor':'#57168f'
+            ,'regleColor':'white'//'#c90e25'
+            ,'txtColor':'alea'//'white'//'#57168f'
             ,'regle':regle
             //,'interpolateColor':d3.interpolatePuRd
             ,'textes':aleaTexte
+            ,'duree':6
+            ,'delais':60
+            ,'boutons':true
+            ,'fctEnd':ajoutNueePapillon
         });
+    }
+    function getPhoto(){
+        svgenie.save(document.getElementById('cantiquessvgMstch'),{ name:"cantique.png" }); 
+    }
+    function clouPapi(e, d){
+        let p = d3.select(e.currentTarget);
+        if(p.attr('class')=='clouPapi'){
+            getPhoto();
+        }else{
+            arrAnim['#'+p.attr('id')].pause();        
+            p.attr('class','clouPapi');
+            //pour le dessin du pin merci à http://www.onlinewebfonts.com/icon
+            p.append('g')
+                .attr('transform','translate(300,300) scale(0.01)')//rotate(-45)
+                .append("path")
+                    .attr("d","M6102.5,5015.5c-93.6-256.7-179.9-678.9-206.3-1012.4l-21.6-266.3l-1377-1374.6L3122.9,990.1l-167.9,24c-357.4,52.8-1029.2-4.8-1508.9-127.2l-115.2-28.8l930.8-930.8l933.2-933.2L1808.3-2392.5L421.7-3779.1l-163.1-508.6c-91.2-280.7-163.1-508.6-158.3-508.6c2.4,0,232.7,76.8,506.2,170.3l501.4,167.9L2492-3073.8l1386.6,1384.2l933.2-933.2L5745-3556l38.4,122.3c19.2,69.6,60,261.5,88.8,429.4c43.2,266.3,50.4,371.8,40.8,779.7l-12,470.2L7270.8-386.9L8640.5,980.5l215.9,16.8c119.9,9.6,302.3,31.2,407.8,50.4c227.9,43.2,635.7,153.5,635.7,175.1c0,7.2-851.6,873.2-1892.8,1921.6C6711.8,4449.4,6109.6,5039.5,6102.5,5015.5z")
+                    .attr("fill","white");
+            //ajoute le drag & drop
+            p.call(
+                    d3.drag()
+                        .on("start", dragstarted)
+                        .on("drag", dragged)
+                        .on("end", dragended)
+                );
 
-    });    
+            /*
+            p.append('rect').attr('x',0).attr('y',0)
+                .attr("width",'100px').attr("height",'100px')
+                .attr('fill','white');
+            */
+
+            function dragstarted(e) {
+                e.sourceEvent.stopPropagation();
+            }
+            
+            function dragged(e) {
+                p.attr('x', e.x).attr('y', e.y);
+            }
+            
+            function dragended(e) {
+                console.log('dragended');
+            }              
+
+
+        } 
+    }
+
+    function ajoutNueePapillon(){
+        let svg = d3.select("#cantiquessvgMstch");
+        if(!cumulPapi)svg.selectAll(".ChaoticumPapillonae").remove();
+        let posi = svg.attr('viewBox').split(" ");
+        rdmX=d3.randomInt(parseFloat(posi[0]), (parseFloat(posi[0])+parseFloat(posi[3])));
+        rdmY=d3.randomInt(parseFloat(posi[1]), parseFloat(posi[4]));
+        for (var i = 0; i < 6; i++) ajoutPapillon('ChaoticumPapillonae'+'_'+nbNuee+'_'+i, svg); 
+        nbNuee++;
+    }
+
+    function ajoutPapillon(id, svg){
+        let url = "http://localhost/samszo/ChaoticumPapillonae/CreaPapiDynaAnim.php?anim=0&larg=32&haut=32&id="+id;
+        d3.xml(url)
+            .then(data => {
+                svg.node().append(data.documentElement);
+                //positionne le papillion
+                d3.select("#"+id)
+                    .attr('x',-1000).attr('y',-1000)//le papillon s'affiche au premier déplacement
+                    .attr('class','ChaoticumPapillonae')
+                    .style('cursor','pointer')
+                    .on('click',clouPapi);
+                //anime le papillon
+                animePapi("#"+id);   
+
+        });
+    }
+    function animePapi(trgt){
+        
+        arrAnim[trgt] = anime.timeline({
+            loop:true,
+        });
+        arrAnim[trgt]
+            .add({
+                targets: trgt,
+                x: getKeyFrame(rdmX),
+                y: getKeyFrame(rdmY),
+                });
+    }
+    function getKeyFrame(fct){
+        var keyframes = [];
+        for (var i = 0; i < 30; i++) keyframes.push({ 
+            value: fct(), duration: anime.random(2000, 4000), delay: anime.random(500, 2000), easing: easingNames[rdmEasingNames()] 
+        });
+        return keyframes;
+    }
+    let easingNames = [
+        'easeInQuad',
+        'easeInCubic',
+        'easeInQuart',
+        'easeInQuint',
+        'easeInSine',
+        'easeInExpo',
+        'easeInCirc',
+        'easeInBack',
+        'easeOutQuad',
+        'easeOutCubic',
+        'easeOutQuart',
+        'easeOutQuint',
+        'easeOutSine',
+        'easeOutExpo',
+        'easeOutCirc',
+        'easeOutBack',
+        'easeInBounce',
+        'easeInOutQuad',
+        'easeInOutCubic',
+        'easeInOutQuart',
+        'easeInOutQuint',
+        'easeInOutSine',
+        'easeInOutExpo',
+        'easeInOutCirc',
+        'easeInOutBack',
+        'easeInOutBounce',
+        'easeOutBounce',
+        'easeOutInQuad',
+        'easeOutInCubic',
+        'easeOutInQuart',
+        'easeOutInQuint',
+        'easeOutInSine',
+        'easeOutInExpo',
+        'easeOutInCirc',
+        'easeOutInBack',
+        'easeOutInBounce',
+    ];
 
 </script>
 </html>

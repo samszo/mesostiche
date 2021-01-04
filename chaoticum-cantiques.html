@@ -14,6 +14,8 @@
     <script src="asset/js/rgbcolor.js"></script>
     <script src="asset/js/jquery.min.js"></script>
 
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap" rel="stylesheet">
     <style>
         body{
             background-color:black;
@@ -26,30 +28,76 @@
             position: absolute;
             top:6px;
             right: 6px;
+        }
+        #menuIcon{
             width: 60px;
             height: 60px;        
         }
+        #iconTof{
+            position: absolute;
+            top: 58px;
+            right: 3px;
+            width: 55px;
+            height: 60px;
+            cursor: pointer;            
+        }
         #menuContent{
             display:none;
-            width: 200px;
-            height: 200px;        
+            width: 400px;
+            height: 100%;        
             background-color:white;
             padding:3px;
+            font-family: 'MedievalSharp', cursive;
         }
-            
+        h3 {
+            font-style: italic;
+        }
+        input{
+            width:98%;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
-    <div class="menu" id="menuContent"><h1>Chaoticum Cantique</h1></div>    
+    <div class="menu" id="menuContent">
+        <h1>Chaoticum Cantiques</h1>
+        <h2>Générateur de cantiques</h2>
+        <h3>Samuel Szoniecky</h3>
+        <h4>Paramètres : </h4>
+        <img id='iconTof' src="asset/img/camera-retro-solid.svg">
+        <label for="inptRegle">Règle : </label>
+        <input type="text" id="inptRegle" name="inptRegle" minlength="4" maxlength="100" value="BONNE REVOLUTION" >
+        <label for="cRegle">Couleur de la règle : Aléa<input style="width: 20px;" type="checkbox" id="cRegleAlea" name="cRegleAlea"></label>
+        <input type="color" id="cRegle" name="cRegle" value="#ffffff">
+        <label for="cTexte">Couleur des textes : Aléa<input style="width: 20px;" type="checkbox" id="cTexteAlea" name="cTexteAlea"></label>
+        <input type="color" id="cTexte" name="cTexte" value="#ffffff">        
+        <label for="cInterpolate">Echelle des couleurs aléatoires : </label>
+        <input type="text" id="cInterpolate" name="cInterpolate" value="interpolateTurbo">        
+        <label for="nbPapi">Nombre de papillon :<span> </span> 
+            <input style="width: 40px;" type="number" id="nbPapi" name="nbPapi" min="0" max="100" value="6">
+            <span> cumul</span>
+            <input style="width: 20px;" type="checkbox" id="papiCumul" name="papiCumul" checked>
+            <span style="margin-right: 100%;"> </span>
+        </label>        
+        <label for="animTexte">Animation des textes :<input style="width: 20px;" type="checkbox" id="animTexte" name="animTexte" checked/></label>
+        <input type="button" id="validParams" name="validParams" value="Valider">        
+        
+        <h4>Merci à : </h4>
+        <h5>- pour les textes : <a href="https://cantiques.yapper.fr/CJ/index.html">Cantiquest</a></h5>
+        <h5>
+            - pour les devs : <a href="https://d3js.org/">D3</a> / <a href="https://animejs.com/">anime</a> / <a href="https://opentype.js.org/">opentype</a>
+        </h5>
+    </div>    
     <div class="menu" id="menuIcon"></div>
     <div id="cantiques"></div>    
 </body>
 <script>
-    let textes = [], regle = 'BONNE REVOLUTION';
-    let rdmEasingNames = d3.randomInt(0, 36), rdmX, rdmY, arrAnim=[]
-    , nbNuee=0, cumulPapi=true, bMenuShow=false;
-
-    let menu = new exagramme({
+    let textes = []
+    //paramètre mesostiche
+    , regle , nbPapi, cumulPapi, cRegle, cTexte, cRegleAlea, cTexteAlea, cInterpolate, animTexte
+    , rdmEasingNames = d3.randomInt(0, 36), rdmX, rdmY, arrAnim=[]
+    , nbNuee=0, bMenuShow=false, meso    
+    , menu = new exagramme({
             'idCont':'menuIcon'
             ,'anime':true
             //,'color':'alea'//'white'//'#c90e25'
@@ -59,12 +107,40 @@
             //,'fctClickTrait':showTrait
         });
 
+    $(function() {
+        //gestion des paramètres
+        d3.select('#validParams').on('click',function(){
+            getParamsMeso();        
+            if(regle){
+                meso.clean();
+                creaMeso();
+            }
+        });
+        //gestion de la photo
+        d3.select('#iconTof').on('click',function(){
+            getPhoto();
+        });
 
-    //txtFromJson();
-    //txtFromCsv();
+        getParamsMeso();
+        //txtFromJson();
+        txtFromCsv();
+        //showMenu();
+    });
 
+    function getParamsMeso(){
+        //récupère les paramètres
+        regle = d3.select('#inptRegle').node().value;
+        nbPapi = d3.select('#nbPapi').node().value;
+        cumulPapi = d3.select('#papiCumul').node().checked;
+        cRegle = d3.select('#cRegle').node().value;
+        cTexte = d3.select('#cTexte').node().value;
+        cRegleAlea = d3.select('#cRegleAlea').node().checked;
+        cTexteAlea = d3.select('#cTexteAlea').node().checked;
+        cInterpolate = d3.select('#cInterpolate').node().value;
+        animTexte = d3.select('#animTexte').node().checked;
+    }
+    
     function showMenu(){
-        console.log('showMenu');
         let t = 2000;
         if(bMenuShow){
             $("#menuContent").fadeOut(t);
@@ -87,30 +163,12 @@
         //https://cantiques.yapper.fr/CJ/index.html    
         d3.csv('data/chants-joyeux.csv').then(function(data) {
             //création des textes 
-            let slt = [];
-            let caract = 0;
             data.forEach(s=>{
                 let st = s.txt;
                 if(st!=""){
-                    st=cleanTexte(st);
-                    if(st.toLowerCase().indexOf(regle.substr(caract,1).toLowerCase())>0){
-                        slt.push(st);
-                        caract++;
-                    }else{
-                        let dechet = st;
-                    }
-                    if(caract>=regle.length){
-                        if(slt.length)textes.push(slt);
-                        caract=0;
-                        slt = [];
-                    }
+                    textes.push(st);                    
                 }
             });
-            //pour avoir égalisé le nombre de texte par rapport à la règle
-            while(slt.length%regle.length!=0){
-                slt.push(" ");
-            }
-            if(slt.length)textes.push(slt);
             creaMeso();
         });
     }
@@ -123,37 +181,14 @@
         d3.json('data/chants-victoire.json').then(function(data) {
             //création des textes 
             data.chants.forEach(c => {
-                let slt = [];
-                let caract = 0;
-                c.content.forEach(s=>{
-                    
-                    //enlève les numéros, les bis et crée le tableau des strophes 
+                c.content.forEach(s=>{                    
                     let arrS = s.substr(3).split(/\r\n|\n|\r/);
-                    //sélectionne les strophes de la règle
                     arrS.forEach(st=>{
                         if(st!=""){
-                            st=cleanTexte(st);
-                            if(st.toLowerCase().indexOf(regle.substr(caract,1).toLowerCase())>=0){
-                                slt.push(st);
-                                caract++;
-                            }else{
-                                let dechet = st;
-                            }
-                            if(caract>=regle.length){
-                                if(slt.length)textes.push(slt);
-                                caract=0;
-                                slt = [];
-                            }
-                        }
+                            textes.push(st)
+                        }                            
                     })
                 })
-                //pour avoir égalisé le nombre de texte par rapport à la règle
-                while(slt.length%regle.length!=0){
-                    slt.push(" ");
-                }
-                if(slt.length)textes.push(slt);
-                caract=0;
-                slt = [];
             });
             txtFromCsv();
         });   
@@ -217,41 +252,44 @@
             let aleaStrophe = [];
             for (let j = 0; j < regle.length; j++) {
                 //pour ne pas avoir de texte vide
-                let s = " ";
+                let s = "";
                 let z=0;//pour ne pas boucler infiniement
-                while(s==" "){
-                    let idxText = d3.randomInt(0, textes.length-1)();
-                    s = textes[idxText][j];
+                while(s==""){
+                    let idxText = d3.randomInt(0, textes.length)();
+                    s = textes[idxText];
+                    //nettoie le texte
+                    s=cleanTexte(s);
+                    //vérifie la présence de la règle
+                    if(s.toLowerCase().indexOf(regle.substr(j,1).toLowerCase())<=0)s="";
                     z++;
-                    if(z>1000)s="";
+                    if(z>1000)s=" ";
                 }
                 aleaStrophe.push(s);
             }
             aleaTexte.push(aleaStrophe)
         }
         //création du graphique
-        let m = new mesostiche({
+        meso = new mesostiche({
             'idCont':'cantiques'
-            ,'anime':true
-            ,'regleColor':'white'//'#c90e25'
-            ,'txtColor':'alea'//'white'//'#57168f'
+            ,'anime':animTexte
+            ,'regleColor': cRegleAlea ? 'alea' : cRegle
+            ,'txtColor': cTexteAlea ? 'alea' : cTexte
             ,'regle':regle
-            //,'interpolateColor':d3.interpolatePuRd
+            ,'interpolateColor':d3[cInterpolate]
             ,'textes':aleaTexte
             ,'duree':6
             ,'delais':60
             ,'boutons':true
             ,'fctEnd':ajoutNueePapillon
         });
+
     }
     function getPhoto(){
         svgenie.save(document.getElementById('cantiquessvgMstch'),{ name:"cantique.png" }); 
     }
     function clouPapi(e, d){
         let p = d3.select(e.currentTarget);
-        if(p.attr('class')=='clouPapi'){
-            getPhoto();
-        }else{
+        if(p.attr('class')!='clouPapi'){
             arrAnim['#'+p.attr('id')].pause();        
             p.attr('class','clouPapi');
             //pour le dessin du pin merci à http://www.onlinewebfonts.com/icon
@@ -296,7 +334,7 @@
         let posi = svg.attr('viewBox').split(" ");
         rdmX=d3.randomInt(parseFloat(posi[0]), (parseFloat(posi[0])+parseFloat(posi[3])));
         rdmY=d3.randomInt(parseFloat(posi[1]), parseFloat(posi[4]));
-        for (var i = 0; i < 6; i++) ajoutPapillon('ChaoticumPapillonae'+'_'+nbNuee+'_'+i, svg); 
+        for (var i = 0; i < nbPapi; i++) ajoutPapillon('ChaoticumPapillonae'+'_'+nbNuee+'_'+i, svg); 
         nbNuee++;
     }
 

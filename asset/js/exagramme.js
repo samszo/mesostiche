@@ -41,6 +41,7 @@ class exagramme {
 
             //construction de l'exagramme
             global = svg.append("g").attr("id",me.idCont+'svgExaGlobal')
+                .style('cursor',me.boutons ? 'pointer' : 'none')
                 .on('click',me.fctClickExa);
             //ajoute un rectangle de fond
             global.append('rect')

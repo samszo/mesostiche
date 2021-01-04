@@ -22,13 +22,13 @@ class mesostiche {
         this.fctChange = params.fctChange ? params.fctChange : false;
         this.fctClickRegle = params.fctClickRegle ? params.fctClickRegle : pauseChangeText;
         this.interpolateColor = params.interpolateColor ? params.interpolateColor : d3.interpolateTurbo;
+        this.animations = params.animations ? params.animations : [];
         this.f;
         var svg, global
             , color = d3.scaleSequential().domain([1,100])
                 .interpolator(me.interpolateColor)//d3.interpolateWarm
             , aleaColor = d3.randomUniform(0, 100)
-            , contbbox, tl
-            , rangeTime =d3.scaleLinear().domain([0,100]).range([0,me.duree])
+            , tl
             , rapportFont=0.8, fontSize=20, fontSizeRedim=fontSize*rapportFont
             , btnPause, btnPlay, btnReload, bPause = false, chars=[]
             , regle, arrTextes=[], arrTextesSelect=[], curdim
@@ -40,7 +40,6 @@ class mesostiche {
                 .attr("id", me.idCont+'svgMstch')
                 .attr("width",me.width+'px').attr("height", me.height+'px')
                 .style("margin",margin+"px");            
-            contbbox = me.cont.node().getBoundingClientRect();
             global = svg.append("g").attr("id",me.idCont+'svgMstchGlobal');
 
             //construction de la règle
@@ -169,7 +168,7 @@ class mesostiche {
         }
 
         function drawSvgTxtPath(){
-
+            if(arrTextes.length==0)return;
             global.select('#gTextes').remove();
             let gTextes = global.append('g').attr('id','gTextes');
             let gTxt = gTextes.selectAll('g').data(arrTextes[curdim]).enter().append('g')
@@ -231,7 +230,7 @@ class mesostiche {
 
         function alterneTexte(){
     
-            let animation = anime.timeline({
+            me.animations['alterneTexte'] = anime.timeline({
                 targets: '.'+me.idCont+'line-drawing',
                 delay: function(el, i) { return i * me.delais },
                 duration: me.duree*1000,//durée par texte /arrTextes.length
@@ -242,7 +241,7 @@ class mesostiche {
                     strokeDashoffset: [0, anime.setDashoffset],
             });
     
-            animation.finished.then(function(){
+            me.animations['alterneTexte'].finished.then(function(){
                 curdim = curdim<arrTextes.length-1 ? curdim+1 : 0;
                 drawSvgTxtPath(curdim);
                 alterneTexte();
@@ -251,7 +250,7 @@ class mesostiche {
 
         function changeColorRegle(){
     
-            let animation = anime({
+            me.animations['changeColorRegle'] = anime({
                 targets: '#'+me.idCont+'svgMstchRegle .regle',
                 loop: true,
                 duration: me.duree*1000,//durée par texte,*arrTextes.length
@@ -270,7 +269,7 @@ class mesostiche {
 
         function changeColorTxt(){
     
-            let animation = anime({
+            me.animations['changeColorTxt'] = anime({
                 targets: '.'+me.idCont+'line-drawing',
                 loop: true,
                 duration: me.duree*1000,//durée par texte,
@@ -336,6 +335,17 @@ class mesostiche {
           svg.attr('visibility',"visible");
         }
 
+        this.clean = function(){
+            me.animations.forEach(a=>{
+                a.remove('.'+me.idCont+'line-drawing');
+                a.remove('#'+me.idCont+'svgMstchRegle .regle');
+            });
+            me.animations=[];
+            arrTextes=[];
+            arrTextesSelect=[];
+            d3.select('#'+me.idCont+'svgMstch').remove();
+        }
+  
         if(me.anime){
             //charge la police 
             opentype.load(me.fontFileName, function(err, font) {

@@ -26,8 +26,6 @@
     <style>
         body{
             background-color:black;
-        }
-        #cantiques{
             width: 100vw;
             height: 100vh;        
         }
@@ -92,33 +90,33 @@
         </label>
         <br/>
         <label>Source des textes :</label>
-        <div class="dropdown" style="float: right;">
+        <div class="dropdown" style="width: 100%;">
             <button class="btn btn-secondary dropdown-toggle" type="button" id="ddmSourcesTextes" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                 Cantiquest - Chants Joyeux
             </button>
-            <div class="dropdown-menu" aria-labelledby="ddmSourcesTextes">
-              <button class="dropdown-item" type="button">Action</button>
-              <button class="dropdown-item" type="button">Another action</button>
-              <button class="dropdown-item" type="button">Something else here</button>
+            <div id="ddmListeSourcesTextes" class="dropdown-menu" aria-labelledby="ddmSourcesTextes">
             </div>
         </div>
         <input style="margin-top: 10px;" type="button" id="validParams" name="validParams" value="Valider">        
         
         <h4>Merci à : </h4>
-        <h5>- pour les textes : <a href="https://cantiques.yapper.fr/CJ/index.html">Cantiquest</a></h5>
+        <h5>- pour les textes : <a href="http://www.balpe.name/">J-P Balpe</a> / <a href="https://cantiques.yapper.fr/CJ/index.html">Cantiquest</a></h5>
         <h5>
             - pour les devs : <a href="https://d3js.org/">D3</a> / <a href="https://animejs.com/">anime</a> / <a href="https://opentype.js.org/">opentype</a>
         </h5>
     </div>    
     <div class="menu" id="menuIcon"></div>
-    <div id="cantiques"></div>    
+    <svg id="mesos">
+        <g id='nueePapillon'></g>
+        <g id='mesostiche'></g>
+    </svg>    
 </body>
 <script>
     let textes = []
     //paramètre mesostiche
-    , regle , nbPapi, cumulPapi, cRegle, cTexte, cRegleAlea, cTexteAlea, cInterpolate, animTexte
+    , idCont = 'mesostiche', regle , nbPapi, cumulPapi, cRegle, cTexte, cRegleAlea, cTexteAlea, cInterpolate, animTexte
     , rdmEasingNames = d3.randomInt(0, 36), rdmX, rdmY, arrAnim=[]
-    , nbNuee=0, bMenuShow=false, meso    
+    , nbNuee=0, bMenuShow=false, meso, nettoie=true, rdmTexte = true, regleVide = true    
     , menu = new exagramme({
             'idCont':'menuIcon'
             ,'anime':true
@@ -127,14 +125,25 @@
             ,'boutons':true
             ,'fctClickExa':showMenu
             //,'fctClickTrait':showTrait
-        });
-
+        })
+    , arrSourceTexte = [
+        {'label':'J-P Balpe - Centons de Corneille', 'gen':true,'fct':txtFromGen,'params':{'p':'oeu=31&cpt=157948&gen=727029&nb=6'}}
+        ,{'label':'J-P Balpe - Poèmes orientaux', 'gen':true,'fct':txtFromGen,'params':{'p':'oeu=37&cpt=171458&gen=727028&nb=6'}}
+        ,{'label':'Cantiquest - Chants Joyeux', 'gen':false,'fct':txtFromCsv,'params':{'url':'data/chants-joyeux.csv'}}
+        ,{'label':'Cantiquest - Chants de Victoire', 'gen':false,'fct':txtFromJson,'params':{'url':'data/chants-joyeux.csv'}}
+    ], curSource;
+    
+    //initialisation de la page
     $(function() {
+        //dimensionne le svg principal
+        d3.select('#mesos')
+            .attr('width',d3.select("body").node().offsetWidth)
+            .attr('height',d3.select("body").node().offsetHeight);
+
         //gestion des paramètres
         d3.select('#validParams').on('click',function(){
             getParamsMeso();        
             if(regle){
-                meso.clean();
                 creaMeso();
             }
         });
@@ -142,10 +151,23 @@
         d3.select('#iconTof').on('click',function(){
             getPhoto();
         });
+        //ajoute les sources
+        d3.select('#ddmListeSourcesTextes').selectAll('button').data(arrSourceTexte).enter().append('button')
+            .attr('class',"dropdown-item")        
+            .attr('type',"button")
+            .text(d=>d.label)
+            .on('click',(e,d)=>{
+                if(meso)meso.clean();
+                curSource = d;
+                d3.select('#ddmSourcesTextes').text(d.label);
+                d.fct(d);
+            });
 
         getParamsMeso();
-        //txtFromJson();
-        txtFromCsv();
+        curSource = arrSourceTexte[0];
+        d3.select('#ddmSourcesTextes').text(curSource.label);
+        txtFromGen(curSource);
+        //txtFromCsv();        
         //showMenu();
     });
 
@@ -179,7 +201,36 @@
         console.log(d);
     }
 
-    function txtFromCsv(cb){
+    function txtFromGen(d){
+        if(!d)d=curSource
+        let url = "http://www.balpe.name/generateur/services/api.php?"+d.params.p;
+        d3.text(url).then(function(data) {
+            //création des textes 
+            textes = parsePhrases(data);
+            nettoie=false;
+            rdmTexte=false;
+            regleVide=true;            
+            creaMeso();
+        });   
+    }
+
+    function parsePhrases(text) {
+        let phrases=[], arrT, txts = text.split(/\r\n|\n|\r/);
+        txts.forEach(t=>{
+            //vérifie si des phrases sont présentes
+            if(t.match( /[^\.!\?]+[\.!\?]+/g ))
+                //merci à https://stackoverflow.com/questions/11761563/javascript-regexp-for-splitting-text-into-sentences-and-keeping-the-delimiter
+                arrT = t.match( /[^\.!\?]+[\.!\?]+/g )
+                    .map(function(t, i){return t});
+            else
+                arrT = [t];
+            phrases = phrases.concat(arrT);
+        });
+        return phrases;
+    }        
+
+
+    function txtFromCsv(e, d){
 
         //Pour les textes merci à :
         //https://cantiques.yapper.fr/CJ/index.html    
@@ -191,12 +242,15 @@
                     textes.push(st);                    
                 }
             });
+            nettoie=true;
+            rdmTexte=true;
+            regleVide=false;            
             creaMeso();
         });
     }
 
 
-    function txtFromJson(){
+    function txtFromJson(e, d){
 
         //Pour les textes merci à :
         //https://github.com/arnoldkouya/Chants-de-victoire-JSON    
@@ -212,7 +266,10 @@
                     })
                 })
             });
-            txtFromCsv();
+            nettoie=true;
+            rdmTexte=true;
+            regleVide=false;            
+            creaMeso();
         });   
     }
     
@@ -267,6 +324,8 @@
     }
 
     function creaMeso(){
+        if(meso)meso.clean();
+        getParamsMeso();
 
         //mélange les textes
         let aleaTexte = [];
@@ -277,22 +336,32 @@
                 let s = "";
                 let z=0;//pour ne pas boucler infiniement
                 while(s==""){
-                    let idxText = d3.randomInt(0, textes.length)();
-                    s = textes[idxText];
+                    if(rdmTexte){
+                        let idxText = d3.randomInt(0, textes.length)();
+                        s = textes[idxText];
+                    }else{
+                        s = textes[i];
+                        i++;
+                    }
                     //nettoie le texte
-                    s=cleanTexte(s);
-                    //vérifie la présence de la règle
-                    if(s.toLowerCase().indexOf(regle.substr(j,1).toLowerCase())<=0)s="";
-                    z++;
-                    if(z>1000)s=" ";
+                    if(nettoie)s=cleanTexte(s);
+                    if(!regleVide){
+                        //vérifie la présence de la règle
+                        if(s.toLowerCase().indexOf(regle.substr(j,1).toLowerCase())<=0)s="";
+                        z++;
+                        if(z>1000)s=" ";
+                    }
                 }
                 aleaStrophe.push(s);
+
             }
             aleaTexte.push(aleaStrophe)
         }
         //création du graphique
         meso = new mesostiche({
-            'idCont':'cantiques'
+            'idCont':idCont
+            ,'width':d3.select("body").node().offsetWidth
+            ,'height':d3.select("body").node().offsetHeight
             ,'anime':animTexte
             ,'regleColor': cRegleAlea ? 'alea' : cRegle
             ,'txtColor': cTexteAlea ? 'alea' : cTexte
@@ -302,12 +371,13 @@
             ,'duree':6
             ,'delais':60
             ,'boutons':true
+            ,'fctEndAlterneTexte': curSource.gen ? txtFromGen : false
             ,'fctEnd':ajoutNueePapillon
         });
 
     }
     function getPhoto(){
-        svgenie.save(document.getElementById('cantiquessvgMstch'),{ name:"cantique.png" }); 
+        svgenie.save(document.getElementById('mesos'),{ name:"chaoticum-mesotiche.png" }); 
     }
     function clouPapi(e, d){
         let p = d3.select(e.currentTarget);
@@ -351,15 +421,12 @@
     }
 
     function ajoutNueePapillon(){
-        let svg = d3.select("#cantiquessvgMstch");
-        //récalcule le texte
-        //http://www.balpe.name/generateur/services/api.php?oeu=37&cpt=171071&nb=6
-
+        let svg = d3.select("#"+idCont+'svgMstch');
         if(!cumulPapi)svg.selectAll(".ChaoticumPapillonae").remove();
-        let posi = svg.attr('viewBox').split(" ");
-        rdmX=d3.randomInt(parseFloat(posi[0]), (parseFloat(posi[0])+parseFloat(posi[3])));
-        rdmY=d3.randomInt(parseFloat(posi[1]), parseFloat(posi[4]));
-        for (var i = 0; i < nbPapi; i++) ajoutPapillon('ChaoticumPapillonae'+'_'+nbNuee+'_'+i, svg); 
+        let posi = svg.node().getBBox();
+        rdmX=d3.randomUniform(posi.x, (posi.width-posi.x));
+        rdmY=d3.randomUniform(posi.y, (posi.height-posi.y));
+        for (var i = 0; i < nbPapi; i++) ajoutPapillon('ChaoticumPapillonae'+'_'+nbNuee+'_'+i, d3.select("#nueePapillon")); 
         nbNuee++;
     }
 

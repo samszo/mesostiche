@@ -21,6 +21,7 @@ class mesostiche {
         this.fctPause = params.fctPause ? params.fctPause : false;
         this.fctChange = params.fctChange ? params.fctChange : false;
         this.fctClickRegle = params.fctClickRegle ? params.fctClickRegle : pauseChangeText;
+        this.fctEndAlterneTexte = params.fctEndAlterneTexte ? params.fctEndAlterneTexte : false;
         this.interpolateColor = params.interpolateColor ? params.interpolateColor : d3.interpolateTurbo;
         this.animations = params.animations ? params.animations : [];
         this.f;
@@ -164,6 +165,7 @@ class mesostiche {
             //redimensionne le svg
             let bb = global.node().getBBox();
             svg.attr('viewBox',(bb.x-margin)+' '+(bb.y-margin)+' '+' '+(bb.width+margin+(margin*2))+' '+(bb.height+(margin*2)));
+            if(me.fctEnd)me.fctEnd();
 
         }
 
@@ -230,8 +232,9 @@ class mesostiche {
 
         function alterneTexte(){
     
-            me.animations['alterneTexte'] = anime.timeline({
-                targets: '.'+me.idCont+'line-drawing',
+            let t = '.'+me.idCont+'line-drawing';
+            let a = anime.timeline({
+                targets: t,
                 delay: function(el, i) { return i * me.delais },
                 duration: me.duree*1000,//durée par texte /arrTextes.length
                 easing: 'easeInOutSine',
@@ -240,18 +243,23 @@ class mesostiche {
                 }).add({
                     strokeDashoffset: [0, anime.setDashoffset],
             });
+            me.animations.push({'a':a,'t':t});    
     
-            me.animations['alterneTexte'].finished.then(function(){
-                curdim = curdim<arrTextes.length-1 ? curdim+1 : 0;
-                drawSvgTxtPath(curdim);
-                alterneTexte();
-            });    
+            a.finished.then(function(){
+                if(me.fctEndAlterneTexte)me.fctEndAlterneTexte(); 
+                else{
+                    curdim = curdim<arrTextes.length-1 ? curdim+1 : 0;
+                    drawSvgTxtPath(curdim);
+                    alterneTexte();
+                } 
+            });
         }
 
         function changeColorRegle(){
     
-            me.animations['changeColorRegle'] = anime({
-                targets: '#'+me.idCont+'svgMstchRegle .regle',
+            let t = '#'+me.idCont+'svgMstchRegle .regle';
+            let a = anime({
+                targets: t,
                 loop: true,
                 duration: me.duree*1000,//durée par texte,*arrTextes.length
                 easing: 'easeInOutSine',
@@ -265,12 +273,14 @@ class mesostiche {
                 //opacity: [0, 1],
                 direction: 'alternate'
             });
+            me.animations.push({'a':a,'t':t});    
         }
 
         function changeColorTxt(){
     
-            me.animations['changeColorTxt'] = anime({
-                targets: '.'+me.idCont+'line-drawing',
+            let t = '.'+me.idCont+'line-drawing';
+            let a = anime({
+                targets: t,
                 loop: true,
                 duration: me.duree*1000,//durée par texte,
                 easing: 'easeInOutSine',
@@ -284,6 +294,8 @@ class mesostiche {
                 //opacity: [0, 1],
                 direction: 'alternate'
             });
+            me.animations.push({'a':a,'t':t});    
+
         }        
         //merci à https://stackoverflow.com/questions/3410464/how-to-find-indices-of-all-occurrences-of-one-string-in-another-in-javascript/3410557#3410557
         function getIndicesOf(searchStr, str, caseSensitive) {
@@ -337,8 +349,7 @@ class mesostiche {
 
         this.clean = function(){
             me.animations.forEach(a=>{
-                a.remove('.'+me.idCont+'line-drawing');
-                a.remove('#'+me.idCont+'svgMstchRegle .regle');
+                anime.remove(a.t);
             });
             me.animations=[];
             arrTextes=[];
@@ -346,7 +357,7 @@ class mesostiche {
             d3.select('#'+me.idCont+'svgMstch').remove();
         }
   
-        if(me.anime){
+        if(me.anime ){
             //charge la police 
             opentype.load(me.fontFileName, function(err, font) {
                 if (err) {

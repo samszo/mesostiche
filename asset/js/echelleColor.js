@@ -71,6 +71,8 @@ class echelleColor {
             let menuListe= menu.append('div')
                 .attr('class',"dropdown-menu")        
                 .attr('id',me.idCont+'_menuListeEchelleColor')
+                .style('height',me.height)      
+                .style('overflow','scroll')       
                 .attr('aria-labelledby',me.idCont+'_menuBtnEchelleColor');
     
             let menuItems =  menuListe.selectAll('div').data(arrColor).enter().append('div')

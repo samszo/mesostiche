@@ -181,7 +181,7 @@
     function getParamsMeso(){
         //récupère les paramètres
         regle = d3.select('#inptRegle').node().value;
-        nbPapi = d3.select('#nbPapi').node().value;
+        nbPapi = parseInt(d3.select('#nbPapi').node().value);
         cumulPapi = d3.select('#papiCumul').node().checked;
         cRegle = d3.select('#cRegle').node().value;
         cTexte = d3.select('#cTexte').node().value;
@@ -429,11 +429,12 @@
 
     function ajoutNueePapillon(){
         let svg = d3.select("#"+idCont+'svgMstch');
-        if(!cumulPapi)svg.selectAll(".ChaoticumPapillonae").remove();
+        let contPapi = d3.select("#nueePapillon");
+        if(!cumulPapi || nbPapi==0)contPapi.selectAll(".ChaoticumPapillonae").remove();
         let posi = svg.node().getBBox();
         rdmX=d3.randomUniform(posi.x, (posi.width-posi.x));
         rdmY=d3.randomUniform(posi.y, (posi.height-posi.y));
-        for (var i = 0; i < nbPapi; i++) ajoutPapillon('ChaoticumPapillonae'+'_'+nbNuee+'_'+i, d3.select("#nueePapillon")); 
+        for (var i = 0; i < nbPapi; i++) ajoutPapillon('ChaoticumPapillonae'+'_'+nbNuee+'_'+i, contPapi); 
         nbNuee++;
     }
 

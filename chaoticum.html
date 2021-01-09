@@ -71,7 +71,7 @@
         <h2>Générateur de mesostiches</h2>
         <h3>Samuel Szoniecky</h3>
         <h4>Paramètres : </h4>
-        <img id='iconTof' src="asset/img/camera-retro-solid.svg">
+        <img id='iconTof' src="asset/img/camera-retro-solid.svg" alt="Photographier l'écran">
         <label for="inptRegle">Règle : </label>
         <input type="text" id="inptRegle" name="inptRegle" minlength="4" maxlength="100" value="BONNE REVOLUTION" >
         <label for="cRegle">Couleur de la règle : Aléa<input style="width: 20px;" type="checkbox" id="cRegleAlea" name="cRegleAlea"></label>
@@ -133,7 +133,7 @@
         {'label':'J-P Balpe - Centons de Corneille', 'gen':true,'fct':txtFromGen,'params':{'p':'oeu=31&cpt=157948&gen=727029&nb=6'}}
         ,{'label':'J-P Balpe - Poèmes orientaux', 'gen':true,'fct':txtFromGen,'params':{'p':'oeu=37&cpt=171458&gen=727028&nb=6'}}
         ,{'label':'Cantiquest - Chants Joyeux', 'gen':false,'fct':txtFromCsv,'params':{'url':'data/chants-joyeux.csv'}}
-        ,{'label':'Cantiquest - Chants de Victoire', 'gen':false,'fct':txtFromJson,'params':{'url':'data/chants-joyeux.csv'}}
+        ,{'label':'Cantiquest - Chants de Victoire', 'gen':false,'fct':txtFromJson,'params':{'url':'data/chants-victoire.json'}}
     ], curSource
     ,ec = new echelleColor({'idCont':'mnuColors','height':'300px'});
     
@@ -170,10 +170,9 @@
         ec.getMenuList();
             
         getParamsMeso();
-        curSource = arrSourceTexte[0];
+        curSource = arrSourceTexte[d3.randomInt(0, arrSourceTexte.length)()];
         d3.select('#ddmSourcesTextes').text(curSource.label);
-        txtFromGen(curSource);
-        //txtFromCsv();        
+        curSource.fct(curSource);
         //showMenu();
     });
 
@@ -428,7 +427,7 @@
     }
 
     function ajoutNueePapillon(){
-        let svg = d3.select("#"+idCont+'svgMstch');
+        let svg = d3.select("#mesos");
         let contPapi = d3.select("#nueePapillon");
         if(!cumulPapi || nbPapi==0)contPapi.selectAll(".ChaoticumPapillonae").remove();
         let posi = svg.node().getBBox();
@@ -439,7 +438,7 @@
     }
 
     function ajoutPapillon(id, svg){
-        let url = "https://samszo.univ-paris8.fr/ChaoticumPapillonae/CreaPapiDynaAnim.php?anim=0&larg=32&haut=32&id="+id;
+        let url = "https://samszo.univ-paris8.fr/ChaoticumPapillonae/CreaPapiDynaAnim.php?anim=0&larg=64&haut=64&id="+id;
         d3.xml(url)
             .then(data => {
                 svg.node().append(data.documentElement);

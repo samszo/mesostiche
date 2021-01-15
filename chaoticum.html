@@ -115,7 +115,8 @@
     </svg>    
 </body>
 <script>
-    let textes = []
+    const urlParams = new URLSearchParams(window.location.search);
+    let textes = []    
     //paramètre mesostiche
     , idCont = 'mesostiche', regle , nbPapi, cumulPapi, cRegle, cTexte, cRegleAlea, cTexteAlea, cInterpolate, animTexte
     , rdmEasingNames = d3.randomInt(0, 36), rdmX, rdmY, arrAnim=[]
@@ -132,6 +133,7 @@
     , arrSourceTexte = [
         {'label':'J-P Balpe - Centons de Corneille', 'gen':true,'fct':txtFromGen,'params':{'p':'oeu=31&cpt=157948&gen=727029&nb=6'}}
         ,{'label':'J-P Balpe - Poèmes orientaux', 'gen':true,'fct':txtFromGen,'params':{'p':'oeu=37&cpt=171458&gen=727028&nb=6'}}
+        ,{'label':'J-P Balpe - Rengas', 'gen':true,'fct':txtFromGen,'params':{'p':'gen=727052'}}        
         ,{'label':'Cantiquest - Chants Joyeux', 'gen':false,'fct':txtFromCsv,'params':{'url':'data/chants-joyeux.csv'}}
         ,{'label':'Cantiquest - Chants de Victoire', 'gen':false,'fct':txtFromJson,'params':{'url':'data/chants-victoire.json'}}
     ], curSource
@@ -170,7 +172,7 @@
         ec.getMenuList();
             
         getParamsMeso();
-        curSource = arrSourceTexte[d3.randomInt(0, arrSourceTexte.length)()];
+        curSource = urlParams.has('source') ?  arrSourceTexte[urlParams.get('source')] : arrSourceTexte[d3.randomInt(0, arrSourceTexte.length)()];
         d3.select('#ddmSourcesTextes').text(curSource.label);
         curSource.fct(curSource);
         //showMenu();

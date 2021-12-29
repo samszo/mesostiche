@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mésotiche en image</title>
+    <script src="asset/js/anime.min.js"></script>
+    <script src="asset/js/d3.V6.min.js"></script>
+    <script src="asset/js/opentype.min.js"></script>
+    <script src="asset/js/echelleColor.js"></script>
+    <script src="asset/js/rgbcolor.js"></script>
+    <script src="asset/js/canvg.js"></script>
+    <script src="asset/js/svgenie.js"></script>
+
+
+    <script src="asset/js/main.js"></script>
+    <script src="asset/js/mesostiche.js"></script>
+    <script src="asset/js/papillon.js"></script>
+    <script src="asset/js/textes.js"></script>
+
+</head>
+<body>
+    <svg id="mesos" >
+        <g id='fond'></g>
+        <g id='mesostiche'></g>
+        <g id='papillon'></g>
+    </svg>    
+</body>
+<script>
+
+    d3.select('#mesos')
+        .attr('width',w)
+        .attr('height',h);
+    d3.select('#fond').append('rect').attr('x',0).attr('y',0).attr('width',w).attr('height',h)
+        .attr('fill','white');
+
+    //la création du mesostiche se fait quand le texte est chargé
+    function creaMeso(){
+        if(meso)meso.clean();
+
+        let aleaTexte = getAleaTextes();
+
+        //création du graphique
+        meso = new mesostiche({
+            'idCont':idCont
+            ,'width':w
+            ,'height':h
+            ,'anime':false
+            ,'regleColor': urlParams.has('cRegle') ? urlParams.get('cRegle') : 'alea'
+            ,'txtColor': urlParams.has('cTeste') ? urlParams.get('cTexte') : 'alea'
+            ,'regle':urlParams.has('regle') ?  urlParams.get('regle') : "manifeste des mutans"
+            ,'interpolateColor':urlParams.has('interpolate') ? urlParams.get('interpolate') : false
+            ,'textes':aleaTexte
+            ,'duree':1
+            ,'delais':1
+            ,'boutons':false
+            ,'fctEndAlterneTexte': false
+            ,'fctEnd':function(){
+                fctPapiAjoutEnd = getPhoto;
+                ajoutPapillon('papiLogo',d3.select("#papillon"),0,0,false);
+            }
+        });
+    }
+    function getPhoto(){
+        if(papis.length)svgenie.save(document.getElementById('mesos'),{ name:"chaoticum-mesotiche.png" }); 
+    }
+
+
+</script>
+</html>

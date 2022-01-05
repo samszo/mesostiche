@@ -16,6 +16,7 @@ class mesostiche {
         this.height = params.height ? params.height : this.cont.node().offsetHeight;
         this.duree = params.duree ? params.duree : 1;//en seconde
         this.delais = params.delais ? params.delais : 250;//en milliseseconde
+        this.repeat = params.repeat ? params.repeat : 250;        
         this.boutons = params.boutons ? params.boutons : false;
         this.fctEnd = params.fctEnd ? params.fctEnd : false;
         this.fctPause = params.fctPause ? params.fctPause : false;
@@ -208,7 +209,7 @@ class mesostiche {
             //redimensionne le svg
             let bb = global.node().getBBox();
             svg.attr('viewBox',(bb.x-margin)+' '+(bb.y-margin)+' '+' '+(bb.width+(margin*3))+' '+(bb.height+(margin*3)));
-            if(me.fctEnd)me.fctEnd();
+            //if(me.fctEnd)me.fctEnd();
         }
     
         function getTxtPath(txt){
@@ -232,23 +233,39 @@ class mesostiche {
 
         function alterneTexte(){
     
-            let t = '.'+me.idCont+'line-drawing';
-            let a = anime.timeline({
-                targets: t,
-                delay: function(el, i) { return i * me.delais },
-                duration: me.duree*1000,//durée par texte /arrTextes.length
-                easing: 'easeInOutSine',
-                }).add({
-                    strokeDashoffset: [anime.setDashoffset, 0],
-                }).add({
-                    strokeDashoffset: [0, anime.setDashoffset],
-            });
+            let a, t = '.'+me.idCont+'line-drawing';
+            //en fin de répétition le texte n'est pas effacé
+            if(curdim == me.repeat){
+                a = anime.timeline({
+                    targets: t,
+                    delay: function(el, i) { return i * me.delais },
+                    duration: me.duree*1000,//durée par texte /arrTextes.length
+                    easing: 'easeInOutSine',
+                    }).add({
+                        strokeDashoffset: [anime.setDashoffset, 0],
+                    });    
+            }else{
+                a = anime.timeline({
+                    targets: t,
+                    delay: function(el, i) { return i * me.delais },
+                    duration: me.duree*1000,//durée par texte /arrTextes.length
+                    easing: 'easeInOutSine',
+                    }).add({
+                        strokeDashoffset: [anime.setDashoffset, 0],
+                    }).add({
+                        strokeDashoffset: [0, anime.setDashoffset],
+                });    
+            }
             me.animations.push({'a':a,'t':t});    
     
             a.finished.then(function(){
+                if(curdim == me.repeat){
+                    if(me.fctEnd)me.fctEnd();
+                    return false;
+                } 
                 if(me.fctEndAlterneTexte)me.fctEndAlterneTexte(); 
                 else{
-                    curdim = curdim<arrTextes.length-1 ? curdim+1 : 0;
+                    curdim = curdim < arrTextes.length-1 ? curdim+1 : 0;
                     drawSvgTxtPath(curdim);
                     alterneTexte();
                 } 

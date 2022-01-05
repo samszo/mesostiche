@@ -56,21 +56,27 @@ function ajoutNueePapillon(){
     nbNuee++;
 }
 
-function ajoutPapillon(id, svg, x=-1000, y=-1000, anime=true){
+function ajoutPapillon(id, svg, posi={x:-1000, y:-1000, bottom:0}, anime=true){
     let url = "https://samszo.univ-paris8.fr/ChaoticumPapillonae/CreaPapiDynaAnim.php?anim=0&larg=64&haut=64&id="+id;
+    url = "http://localhost/samszo/ChaoticumPapillonae/CreaPapiDynaAnim.php?anim=0&larg=64&haut=64&id="+id;
     d3.xml(url)
         .then(data => {
             svg.node().append(data.documentElement);
             //positionne le papillion
             papis.push(
                 d3.select("#"+id)
-                .attr('x',x).attr('y',y)//le papillon s'affiche au premier déplacement
+                .attr('x',posi.x).attr('y',posi.y)//le papillon s'affiche au premier déplacement
                 .attr('class','ChaoticumPapillonae')
                 .style('cursor','pointer')
                 .on('click',clouPapi)
             );
             //anime le papillon
             if(anime)animePapi("#"+id);
+            if(posi.bottom){
+                //positionne le papillon précisément
+                let bb = svg.node().getBBox();
+                d3.select("#"+id).attr('y',(posi.bottom-bb.height-bb.y));                
+            } 
             if(fctPapiAjoutEnd)fctPapiAjoutEnd();   
 
     });

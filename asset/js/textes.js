@@ -6,10 +6,59 @@ let textes=[], nettoie=true, rdmTexte = true, regleVide = true
     ,{'label':'J-P Balpe - Rengas', 'gen':true,'fct':txtFromGen,'params':{'p':'gen=727052'}}        
     ,{'label':'Cantiquest - Chants Joyeux', 'gen':false,'fct':txtFromCsv,'params':{'url':'data/chants-joyeux.csv'}}
     ,{'label':'Cantiquest - Chants de Victoire', 'gen':false,'fct':txtFromJson,'params':{'url':'data/chants-victoire.json'}}
+    ,{'label':'Victor Hugo - Contemplations', 'gen':false,'fct':txtFromOmk,'params':{'url':'http://localhost/omk_poesie/api/items?limit=100&sort_by=random&page=null&resource_class_id=127'}}    
+
 ]
 , curSource = urlParams.has('source') ?  arrSourceTexte[urlParams.get('source')] : arrSourceTexte[d3.randomInt(0, arrSourceTexte.length)()];
 //charge les textes
 curSource.fct(curSource);
+
+
+function getAleaTextes(){
+    //mélange les textes
+    let aleaTexte = [];
+    for (let i = 0; i < 99; i++) {
+        let aleaStrophe = [];
+        for (let j = 0; j < regle.length; j++) {
+            //pour ne pas avoir de texte vide
+            let s = "";
+            let z=0;//pour ne pas boucler infiniement
+            while(s==""){
+                if(rdmTexte){
+                    let idxText = d3.randomInt(0, textes.length)();
+                    s = textes[idxText];
+                }else{
+                    s = textes[i];
+                    i++;
+                }
+                //nettoie le texte
+                if(nettoie && s)s=cleanTexte(s);
+                if(!regleVide){
+                    //vérifie la présence de la règle
+                    if(s.toLowerCase().indexOf(regle.substr(j,1).toLowerCase())<=0)s="";
+                    z++;
+                    if(z>1000)s=" ";
+                }
+            }
+            aleaStrophe.push(s);
+
+        }
+        aleaTexte.push(aleaStrophe)
+    }
+    return aleaTexte;
+}
+
+function txtFromOmk(d){
+    if(!d)d=curSource
+    d3.json(d.params.url).then(function(data) {
+        //création des textes
+        data.forEach(item=>textes.push(item['o:title'])); 
+        nettoie=false;
+        rdmTexte=false;
+        regleVide=true;            
+        creaMeso();
+    });   
+}
 
 function txtFromGen(d){
     if(!d)d=curSource

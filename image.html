@@ -17,20 +17,39 @@
     <script src="asset/js/mesostiche.js"></script>
     <script src="asset/js/papillon.js"></script>
     <script src="asset/js/textes.js"></script>
-
+    <style>
+        body{
+            width: 100vw;
+            height: 100vh;        
+            margin:0px;
+        }
+    </style>
 </head>
 <body>
     <svg id="mesos" >
         <g id='fond'></g>
         <g id='mesostiche'></g>
         <g id='papillon'></g>
+        <g id='source'></g>
     </svg>    
 </body>
 <script>
+    if(urlParams.has('responsive')){
+        d3.select('#mesos').attr("width",'100%').attr("height", '100%')
+            .attr("viewBox","0 0 "+w+" "+h)
+            .attr("preserveAspectRatio","xMinYMin meet");
+    }else{
+        d3.select('#mesos')
+            .attr('width',w)
+            .attr('height',h);
+        }            
 
-    d3.select('#mesos')
-        .attr('width',w)
-        .attr('height',h);
+    /*
+    d3.select('#mesos').attr("width",'98%').attr("height", '98%')
+                .attr("viewBox","0 0 "+w+" "+h)
+                .attr("preserveAspectRatio","xMinYMin meet");
+    */
+
     d3.select('#fond').append('rect').attr('x',0).attr('y',0).attr('width',w).attr('height',h)
         .attr('fill','white');
 
@@ -39,31 +58,55 @@
         if(meso)meso.clean();
 
         let aleaTexte = getAleaTextes();
-
+        let sourceH = 14;
         //création du graphique
         meso = new mesostiche({
             'idCont':idCont
             ,'width':w
-            ,'height':h
-            ,'anime':false
+            ,'height':h-sourceH
+            ,'anime':true
             ,'regleColor': urlParams.has('cRegle') ? urlParams.get('cRegle') : 'alea'
             ,'txtColor': urlParams.has('cTeste') ? urlParams.get('cTexte') : 'alea'
             ,'regle':urlParams.has('regle') ?  urlParams.get('regle') : "manifeste des mutans"
             ,'interpolateColor':urlParams.has('interpolate') ? urlParams.get('interpolate') : false
             ,'textes':aleaTexte
+            ,'repeat':1
             ,'duree':1
             ,'delais':1
             ,'boutons':false
             ,'fctEndAlterneTexte': false
-            ,'fctEnd':function(){
-                fctPapiAjoutEnd = getPhoto;
-                ajoutPapillon('papiLogo',d3.select("#papillon"),0,0,false);
+            ,'fctEnd':function(){                
+                ajoutPapillon('papiLogo',d3.select("#papillon"),{'x':0,'y':0,'bottom':h-sourceH},false);
+                fct(urlParams.has('fctEnd') ? urlParams.get('fctEnd') : 'getPhoto');
             }
         });
+        //affiche la source
+        d3.select('#source').append("text")
+                .attr("x",64)
+                .attr("y",h-3-sourceH)
+                .attr("text-anchor", "start")
+                .attr("font-size", (sourceH-2)+"px")
+                .attr("fill",'black')
+                .text('Frayages dans : '+curSource.label);
+
+
     }
     function getPhoto(){
-        if(papis.length)svgenie.save(document.getElementById('mesos'),{ name:"chaoticum-mesotiche.png" }); 
+        svgenie.save(document.getElementById('mesos'),{ name:"chaoticum-mesotiche.png" }); 
     }
+    function fct(txt){
+        switch (txt) {
+            case 'positionneMesostiche':
+                parent.positionneMesostiche()
+                break;        
+            case 'rien':
+                console.log('rien');
+                break;            
+            case 'getPhoto':
+                getPhoto();
+                break;
+        }
+    }            
 
 
 </script>

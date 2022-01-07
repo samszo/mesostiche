@@ -301,7 +301,8 @@
     }
 
     function ajoutPapillon(id, svg){
-        let url = "http://localhost/samszo/ChaoticumPapillonae/CreaPapiDynaAnim.php?anim=0&larg=32&haut=32&id="+id;
+        //let url = "http://localhost/samszo/ChaoticumPapillonae/CreaPapiDynaAnim.php?anim=0&larg=32&haut=32&id="+id;
+        let url = "https://samszo.univ-paris8.fr/ChaoticumPapillonae/CreaPapiDynaAnim.php?anim=0&larg=32&haut=32&id="+id;
         d3.xml(url)
             .then(data => {
                 svg.node().append(data.documentElement);

@@ -6,7 +6,7 @@ let textes=[], nettoie=true, rdmTexte = true, regleVide = true
     ,{'label':'J-P Balpe - Rengas', 'gen':true,'fct':txtFromGen,'params':{'p':'gen=727052'}}        
     ,{'label':'Cantiquest - Chants Joyeux', 'gen':false,'fct':txtFromCsv,'params':{'url':'data/chants-joyeux.csv'}}
     ,{'label':'Cantiquest - Chants de Victoire', 'gen':false,'fct':txtFromJson,'params':{'url':'data/chants-victoire.json'}}
-    ,{'label':'Victor Hugo - Contemplations', 'gen':false,'fct':txtFromOmk,'params':{'url':'http://localhost/omk_poesie/api/items?limit=100&sort_by=random&page=null&resource_class_id=127'}}    
+    ,{'label':'Victor Hugo - Contemplations', 'gen':false,'fct':txtFromOmk,'params':{'url':'https://jardindesconnaissances.univ-paris8.fr/poesie/api/items?limit=100&sort_by=random&page=null&resource_class_id=127'}}    
 
 ]
 , curSource = urlParams.has('source') ?  arrSourceTexte[urlParams.get('source')] : arrSourceTexte[d3.randomInt(0, arrSourceTexte.length)()];

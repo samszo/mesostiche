@@ -14,7 +14,6 @@ let textes=[], nettoie=true, rdmTexte = true, regleVide = true
         ,'params':{'url':'https://jardindesconnaissances.univ-paris8.fr/poesie/api/items?limit=100&sort_by=random&page=null&resource_class_id=127&item_set_id=15738'}}    
     ,{'label':'Paul Verlaine - Amour', 'gen':false,'fct':txtFromOmk
         ,'params':{'url':'https://jardindesconnaissances.univ-paris8.fr/poesie/api/items?limit=100&sort_by=random&page=null&resource_class_id=127&item_set_id=18856'}}    
-
 ]
 , curSource = urlParams.has('source') ?  arrSourceTexte[urlParams.get('source')] : arrSourceTexte[d3.randomInt(0, arrSourceTexte.length)()];
 //charge les textes

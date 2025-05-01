@@ -56,6 +56,7 @@ function getAleaTextes(){
 
 function txtFromOmk(d){
     if(!d)d=curSource
+    textes=[];
     d3.json(d.params.url).then(function(data) {
         //création des textes
         data.forEach(item=>textes.push(item['o:title'])); 
